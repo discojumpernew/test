@@ -1,0 +1,46 @@
+{
+    "Title": "Self Service",
+    "Logo": "images/logo.png",
+
+    "ProgramName1": "ТУРБО СУШКА",
+    "ProgramName2": "ПЫЛЕСОС",
+    "ProgramName3": "ВЫСОКОЕ",
+    "ProgramName4": "СРЕДНЕЕ",
+    "ProgramName5": "СЛАБОЕ",
+    "ProgramName6": "АКТИВНАЯ ХИМИЯ",
+    "ProgramName7": "ПЕНА",
+    "ProgramName8": "ПОЛИРУЮЩИЙ ВОСК",
+    
+    "ProgramImage1": "images/turbo.png",
+    "ProgramImage2": "images/vacuum.png",
+    "ProgramImage3": "images/water_high.png",
+    "ProgramImage4": "images/water_med.png",
+    "ProgramImage5": "images/water_low.png",
+    "ProgramImage6": "images/chemistry.png",
+    "ProgramImage7": "images/foam.png",
+    "ProgramImage8": "images/wax.png",
+	
+	"cleanerRate":"15",
+	"dryingRate":"15",
+	"waterRate":"40",
+	"chemistryRate":"50",
+	"foamRate":"50",
+	"waxRate":"50",
+	"pauseRate":"5",
+
+    "ProgramAudio1": "audio/turbo.mp3",
+    "ProgramAudio2": "audio/vacuum.mp3",
+    "ProgramAudio3": "audio/water.mp3",
+    "ProgramAudio4": "audio/water.mp3",
+    "ProgramAudio5": "audio/water.mp3",
+    "ProgramAudio6": "audio/chemistry.mp3",
+    "ProgramAudio7": "audio/foam.mp3",
+    "ProgramAudio8": "audio/wax.mp3",
+    "ProgramAudioPause": "audio/pause.mp3",
+
+    "SlideChangeTimeout": 1000,
+    "InitSlideChangeMult": 3,
+    "ButtonTimeout": 5000,
+	
+	"shopId": "1119271:live_wFLoOdsVQtdWuyL0PC1tj3rM1OVdM6nsMEgqrM7WSvk"
+}

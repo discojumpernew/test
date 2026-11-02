@@ -1,0 +1,59 @@
+<RCC>
+    <qresource prefix="/">
+        <file>main.qml</file>
+        <file>imports/IPS4MCO/Constants.qml</file>
+        <file>imports/IPS4MCO/qmldir</file>
+        <file>qml/single/Session.qml</file>
+        <file>qml/single/SessionForm.ui.qml</file>
+        <file>qml/single/ProgramButton.qml</file>
+        <file>qml/single/ProgramButtonForm.ui.qml</file>
+        <file>qml/single/Initialization.qml</file>
+        <file>qml/single/InitializationForm.ui.qml</file>
+        <file>qml/single/Error.qml</file>
+        <file>qml/single/ErrorForm.ui.qml</file>
+        <file alias="logoIm">qml/single/images/logo.png</file>
+        <file>qml/single/LoginPage.qml</file>
+        <file>qml/single/RegisterPage.qml</file>
+        <file alias="error_icon">qml/single/images/error_icon.png</file>
+        <file>qml/single/PaymentSelection.qml</file>
+        <file alias="sbpIn">qml/single/images/sbp.svg</file>
+        <file alias="historyIn">qml/single/images/history.png</file>
+        <file>qml/single/HistoryPage.qml</file>
+        <file>qml/single/CashPage.qml</file>
+        <file>qml/single/PriceList.qml</file>
+        <file>qml/single/PriceBox.qml</file>
+        <file alias="chemistry">qml/single/images/chemistry.png</file>
+        <file alias="foam">qml/single/images/foam.png</file>
+        <file alias="turbo">qml/single/images/turbo.png</file>
+        <file alias="vacuum">qml/single/images/vacuum.png</file>
+        <file alias="water">qml/single/images/water_low.png</file>
+        <file alias="wax">qml/single/images/wax.png</file>
+        <file alias="pause">qml/single/images/pause.png</file>
+        <file>fonts/TerminatorGenisys.ttf</file>
+        <file>qml/single/SbpPage.qml</file>
+        <file>qml/single/CustomKeyboard.qml</file>
+        <file alias="iconlogo">icon.ico</file>
+        <file>qml/single/LoaderDialog.qml</file>
+        <file>qml/single/InstructionPage.qml</file>
+        <file>qml/single/CardPage.qml</file>
+        <file alias="instruction">instruction.jpg</file>
+        <file alias="left_arrow">qml/single/images/left_arrow.png</file>
+        <file alias="vendotek">qml/single/images/vendotek.png</file>
+        <file>qml/single/Theme.qml</file>
+        <file alias="averagePressureIcon">qml/single/images/averagePressureIcon.png</file>
+        <file alias="balanceIcon">qml/single/images/balanceIcon.png</file>
+        <file alias="chemistryIcon">qml/single/images/chemistryIcon.png</file>
+        <file alias="foamPinkIcon">qml/single/images/foamPinkIcon.png</file>
+        <file alias="foamWhiteIcon">qml/single/images/foamWhiteIcon.png</file>
+        <file alias="foamYellowIcon">qml/single/images/foamYellowIcon.png</file>
+        <file alias="instructionIcon">qml/single/images/instructionIcon.png</file>
+        <file alias="loginIcon">qml/single/images/loginIcon.png</file>
+        <file alias="pauseIcon">qml/single/images/pauseIcon.png</file>
+        <file alias="priceIcon">qml/single/images/priceIcon.png</file>
+        <file alias="strongPressureIcon">qml/single/images/strongPressureIcon.png</file>
+        <file alias="turboIcon">qml/single/images/turboIcon.png</file>
+        <file alias="vacuumIcon">qml/single/images/vacuumIcon.png</file>
+        <file alias="waxIcon">qml/single/images/waxIcon.png</file>
+        <file alias="weakPressureIcon">qml/single/images/weakPressureIcon.png</file>
+    </qresource>
+</RCC>

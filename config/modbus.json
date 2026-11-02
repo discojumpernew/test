@@ -1,0 +1,9 @@
+{
+    "BaudRate": 19200,
+    "DataBits": 8,
+    "Parity": 0,
+    "PortName": "COM7",
+    "ServerAddress": 18,
+    "StopBits": 1,
+    "Timeout": 8
+}
