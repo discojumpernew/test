@@ -1,6 +1,7 @@
 #ifndef UPDATER_H
 #define UPDATER_H
 
+#include <QFile>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QObject>
