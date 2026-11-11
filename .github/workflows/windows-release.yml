@@ -60,16 +60,35 @@ jobs:
         shell: pwsh
         run: Compress-Archive -Path dist\* -DestinationPath IPS4MCO-windows.zip
 
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup --no-progress -y
+
+      - name: Build installer (Inno Setup)
+        shell: pwsh
+        run: |
+          $m = Select-String -Path IPS4MCO.pro -Pattern 'APPVERSION\s*=\s*([0-9.]+)'
+          $ver = $m.Matches[0].Groups[1].Value
+          Write-Host "Version: $ver"
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          & $iscc "/DMyAppVersion=$ver" "installer\setup.iss"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Get-ChildItem installer-out
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: IPS4MCO-windows
-          path: IPS4MCO-windows.zip
+          path: |
+            IPS4MCO-windows.zip
+            installer-out/*.exe
           retention-days: 30
 
       - name: Create GitHub Release (for OTA)
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: IPS4MCO-windows.zip
+          files: |
+            IPS4MCO-windows.zip
+            installer-out/*.exe
           generate_release_notes: true
