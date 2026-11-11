@@ -42,7 +42,7 @@ ApplicationWindow {
 
     function changePage(page) {
         Qt.inputMethod.hide()
-        var visible_page = [false, false, false, false, false, false, false, false, false, false, false, false]
+        var visible_page = [false, false, false, false, false, false, false, false, false, false, false, false, false, false]
         visible_page[page] = true
 
         p_initialization.visible = visible_page[0]
@@ -57,6 +57,8 @@ ApplicationWindow {
         p_sbp.visible = visible_page[9]
         p_instruction.visible = visible_page[10]
         p_card.visible = visible_page[11]
+        p_idsetup.visible = visible_page[12]
+        p_blocked.visible = visible_page[13]
     }
 
     Connections {
@@ -77,6 +79,7 @@ ApplicationWindow {
         target: backend
         function onShowSessionMessage(isErr, message) {
             p_session.showErrorToast(isErr, message)
+            p_idsetup.showErrorToast(isErr, message)
         }
     }
 
@@ -147,6 +150,27 @@ ApplicationWindow {
 
         function onShowCard() {
             changePage(Constants.card)
+        }
+
+        function onShowIdSetup() {
+            changePage(Constants.idsetup)
+        }
+
+        function onShowBlockedPage(blocked) {
+            if (blocked) {
+                changePage(Constants.blocked)
+            } else if (p_blocked.visible) {
+                changePage(Constants.session)
+            }
+        }
+    }
+
+    Connections {
+        target: updater
+        function onStatusTextChanged() {
+            if (updater.statusText !== "") {
+                p_session.showErrorToast(false, updater.statusText)
+            }
         }
     }
 
@@ -238,6 +262,18 @@ ApplicationWindow {
 
     CardPage {
         id: p_card
+        visible: false
+        darkTheme: window.darkTheme
+    }
+
+    IdSetupPage {
+        id: p_idsetup
+        visible: false
+        darkTheme: window.darkTheme
+    }
+
+    BlockedPage {
+        id: p_blocked
         visible: false
         darkTheme: window.darkTheme
     }

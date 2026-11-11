@@ -21,6 +21,8 @@ db::DBManager::DBManager(QObject* parent)
     connect(worker_, &DBWorker::AddUserResult, this, &DBManager::AddUserResult, Qt::QueuedConnection);
     connect(worker_, &DBWorker::PulseResult, this, &DBManager::PulseResult, Qt::QueuedConnection);
     connect(worker_, &DBWorker::GetUserHistoryResult, this, &DBManager::GetUserHistoryResult, Qt::QueuedConnection);
+    connect(worker_, &DBWorker::ValidateIdCodeResult, this, &DBManager::ValidateIdCodeResult, Qt::QueuedConnection);
+    connect(worker_, &DBWorker::BlockStatusResult, this, &DBManager::BlockStatusResult, Qt::QueuedConnection);
 
     connect(&workerThread_, &QThread::started, worker_, &DBWorker::processLoop);
     workerThread_.start();
@@ -58,12 +60,12 @@ void db::DBManager::TryLogout(quint64 requestId, unsigned userId)
     worker_->queue.push(task);
 }
 
-void db::DBManager::AddToHistory(quint64 requestId, unsigned userId, int added)
+void db::DBManager::AddToHistory(quint64 requestId, unsigned userId, int added, QString idCode)
 {
     Task task;
     task.requestId = requestId;
-    task.action = [this, userId, added] {
-        worker_->AddToHistory(userId, added);
+    task.action = [this, userId, added, idCode] {
+        worker_->AddToHistory(userId, added, idCode);
     };
 
     worker_->queue.push(task);
@@ -102,12 +104,34 @@ void db::DBManager::GetUserHistory(quint64 requestId, unsigned userId)
     worker_->queue.push(task);
 }
 
-void db::DBManager::WriteNewBalance(quint64 requestId, unsigned userId, unsigned newBalance)
+void db::DBManager::WriteNewBalance(quint64 requestId, unsigned userId, unsigned newBalance, QString idCode)
 {
     Task task;
     task.requestId = requestId;
-    task.action = [this, userId, newBalance] {
-        worker_->WriteNewBalance(userId, newBalance);
+    task.action = [this, userId, newBalance, idCode] {
+        worker_->WriteNewBalance(userId, newBalance, idCode);
+    };
+
+    worker_->queue.push(task);
+}
+
+void db::DBManager::ValidateIdCode(quint64 requestId, QString code)
+{
+    Task task;
+    task.requestId = requestId;
+    task.action = [this, requestId, code] {
+        worker_->ValidateIdCode(requestId, code);
+    };
+
+    worker_->queue.push(task);
+}
+
+void db::DBManager::CheckBlockStatus(quint64 requestId, QString code)
+{
+    Task task;
+    task.requestId = requestId;
+    task.action = [this, requestId, code] {
+        worker_->CheckBlockStatus(requestId, code);
     };
 
     worker_->queue.push(task);

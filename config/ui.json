@@ -42,5 +42,8 @@
     "InitSlideChangeMult": 3,
     "ButtonTimeout": 5000,
 	
-	"shopId": "1119271:live_wFLoOdsVQtdWuyL0PC1tj3rM1OVdM6nsMEgqrM7WSvk"
+	"shopId": "1119271:live_wFLoOdsVQtdWuyL0PC1tj3rM1OVdM6nsMEgqrM7WSvk",
+
+    "updateUrl": "https://api.github.com/repos/discojumpernew/test/releases/latest",
+    "updateToken": "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"
 }

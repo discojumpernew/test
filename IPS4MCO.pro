@@ -1,6 +1,10 @@
-QT += qml quick serialport serialbus multimedia multimediawidgets sql virtualkeyboard core webview webenginequick
+QT += qml quick serialport serialbus multimedia multimediawidgets sql virtualkeyboard core webview webenginequick network
 
 CONFIG += c++17
+
+# Версия приложения (для OTA-обновления)
+APPVERSION = 1.1.0
+DEFINES += APP_VERSION=\\\"$${APPVERSION}\\\"
 
 RC_ICONS = icon.ico
 
@@ -16,6 +20,7 @@ SOURCES += \
     engine/DBWorker.cpp \
     engine/configmanager.cpp \
     engine/engine.cpp \
+    engine/updater.cpp \
     main.cpp \
     sbp_pay/yoomoneyqrhandler.cpp
 
@@ -36,6 +41,7 @@ HEADERS += \
     engine/MPMCBlockingQueue.h \
     engine/configmanager.h \
     engine/engine.h \
+    engine/updater.h \
     errors.h \
     sbp_pay/yoomoneyqrhandler.h
 

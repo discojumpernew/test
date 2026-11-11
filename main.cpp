@@ -7,6 +7,7 @@
 
 #include "engine/engine.h"
 #include "sbp_pay/yoomoneyqrhandler.h"
+#include "engine/updater.h"
 
 int main(int argc, char* argv[])
 {
@@ -34,8 +35,12 @@ int main(int argc, char* argv[])
     Engine engine_backend(appdir);
     qmlRegisterType<YooMoneyQRHandler>("YooMoney", 1, 0, "YooMoneyQRHandler");
 
+    Updater updater(appdir);
+    QObject::connect(&updater, &Updater::restartRequested, &app, &QCoreApplication::quit);
+
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty("backend", &engine_backend);
+    engine.rootContext()->setContextProperty("updater", &updater);
     engine.rootContext()->setContextProperty("applicationDirPath", appdir);
     engine.addImportPath(":/imports");
 

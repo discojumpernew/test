@@ -55,5 +55,7 @@
         <file alias="vacuumIcon">qml/single/images/vacuumIcon.png</file>
         <file alias="waxIcon">qml/single/images/waxIcon.png</file>
         <file alias="weakPressureIcon">qml/single/images/weakPressureIcon.png</file>
+        <file>qml/single/IdSetupPage.qml</file>
+        <file>qml/single/BlockedPage.qml</file>
     </qresource>
 </RCC>

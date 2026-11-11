@@ -15,6 +15,7 @@
 
 #define FILE_PATH_MODBUS_CONFIG "/config/modbus.json"
 #define FILE_PATH_UI_CONFIG "/config/ui.json"
+#define FILE_PATH_ID_CONFIG "/config/id.json"
 #define FILE_PATH_LOG "/log/"
 
 class RequestTracker : public QObject {
@@ -43,6 +44,12 @@ public:
     Q_PROPERTY(int colcash READ colcash WRITE setColcash NOTIFY colcashChanged)
     Q_PROPERTY(bool ispause_free READ ispause_free WRITE setIsPauseFree NOTIFY isPauseFreeChanged)
     Q_PROPERTY(bool hasCurrentUser READ hasCurrentUser NOTIFY currentUserChanged)
+    Q_PROPERTY(bool hasIdCode READ hasIdCode NOTIFY idCodeChanged)
+    Q_PROPERTY(QString idCode READ idCode NOTIFY idCodeChanged)
+    Q_PROPERTY(bool isBlocked READ isBlocked NOTIFY blockedChanged)
+    Q_PROPERTY(QString appVersion READ appVersion CONSTANT)
+
+    Q_INVOKABLE void submitIdCode(const QString& code);
 
     Q_PROPERTY(QString cleanerRate READ cleanerRate NOTIFY cleanerRateChanged)
     Q_PROPERTY(QString dryingRate READ dryingRate NOTIFY dryingRateChanged)
@@ -89,6 +96,10 @@ public:
     int colcash() const;
     bool ispause_free() const;
     bool hasCurrentUser() const;
+    bool hasIdCode() const;
+    QString idCode() const;
+    bool isBlocked() const;
+    QString appVersion() const;
     QString cleanerRate() const;
     QString dryingRate() const;
     QString waterRate() const;
@@ -115,6 +126,10 @@ signals:
     void tryRegister(QString phone, QString passwd);
 
     void currentUserChanged();
+    void idCodeChanged();
+    void blockedChanged();
+    void showIdSetup();
+    void showBlockedPage(bool blocked);
     void cleanerRateChanged();
     void dryingRateChanged();
     void waterRateChanged();
@@ -170,6 +185,8 @@ public slots:
     void OnAddUserResultDB(quint64, db::QueryStatus);
     void OnPulseResultDB(quint64, db::QueryStatus);
     void OnGetUserHistoryResultDB(quint64, db::QueryStatus, QVector<db::historyElem>);
+    void OnValidateIdCodeResultDB(quint64, db::QueryStatus, bool blocked);
+    void OnBlockStatusResultDB(quint64, bool blocked);
 
 private:
     void OnTryLogin(QString phone, QString passwd);
@@ -178,6 +195,8 @@ private:
     quint16 BalanceRoutine();
     void WaitDBAnswer(quint64 qId);
     void StopWaitAnswer(quint64 qId);
+    void LoadIdentity();
+    void SaveIdentity();
 
     enum States {
         Initialization = 0,
@@ -195,6 +214,12 @@ private:
     QSet<quint64> activeRequests_;
     std::optional<db::UserData> currentUser_;
     std::optional<quint64> waitId_;
+
+    QString idCode_;
+    QString pendingIdCode_;
+    bool hasIdCode_ = false;
+    bool m_isBlocked = false;
+    int blockCheckCounter_ = 0;
 
     QString appdir;
 

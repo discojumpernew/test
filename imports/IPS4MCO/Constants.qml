@@ -22,4 +22,6 @@ QtObject {
     readonly property int sbp: 9
     readonly property int instruction: 10
     readonly property int card: 11
+    readonly property int idsetup: 12
+    readonly property int blocked: 13
 }

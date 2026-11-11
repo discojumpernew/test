@@ -73,17 +73,23 @@ public:
 
     void TryLogin(quint64 requestId, QString phone, QString passwd);
     void TryLogout(unsigned userId);
-    void AddToHistory(unsigned userId, int added);
+    void AddToHistory(unsigned userId, int added, QString idCode);
     void AddUser(quint64 requestId, QString phone, QString passwd, unsigned initialBalance);
     void Pulse(quint64 requestId, unsigned userId);
     void GetUserHistory(quint64 requestId, unsigned userId);
-    void WriteNewBalance(unsigned userId, unsigned newBalance);
+    void WriteNewBalance(unsigned userId, unsigned newBalance, QString idCode);
+
+    void ValidateIdCode(quint64 requestId, QString code);
+    void CheckBlockStatus(quint64 requestId, QString code);
+    void EnsureRemoteSchema();
 
 signals:
     void TryLoginResult(quint64, QueryStatus, std::optional<UserData>);
     void AddUserResult(quint64, QueryStatus);
     void PulseResult(quint64, QueryStatus);
     void GetUserHistoryResult(quint64, QueryStatus, QVector<historyElem>);
+    void ValidateIdCodeResult(quint64, QueryStatus, bool blocked);
+    void BlockStatusResult(quint64, bool blocked);
 
 private:
     bool TryOpenRemote();
@@ -91,6 +97,7 @@ private:
 
     void SendLocalHistory();
     void ReloadConnection();
+    bool QueryBlockedState(const QString& code, bool* blocked, db::QueryStatus* status);
 
     QSqlDatabase remoteDB_;
     QSqlDatabase localDB_;

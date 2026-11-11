@@ -84,9 +84,10 @@ Rectangle {
 
     Rectangle {
         id: header
-        width: parent.width
-        height: parent.height / 20
-        color: themeItem.appBackground
+        width: parent.width / 10 * 9
+        height: parent.height / 18
+        color: darkTheme ? "#111518" : "#1c2226"
+        radius: 24
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: parent.top
 
@@ -94,22 +95,30 @@ Rectangle {
             height: parent.height
             anchors.verticalCenter: parent.verticalCenter
             anchors.horizontalCenter: parent.horizontalCenter
-            spacing: 20
+            spacing: 24
 
-            Image {
+            Text {
                 id: logo
                 height: parent.height
-                fillMode: Image.PreserveAspectFit
-                source: "qrc:logoIm"
-                width: 150
+                anchors.verticalCenter: parent.verticalCenter
+                verticalAlignment: Text.AlignVCenter
+                text: "voda"
+                color: "#ffffff"
+                font.pixelSize: 56
+                font.bold: true
+                font.letterSpacing: 2
+                font.family: myFont.name
+                font.styleName: "Bold Italic"
             }
 
             Rectangle {
                 id: sep
-                height: Constants.res1920_1080 ? (parent.height - 50) : (parent.height - 20)
-                width: Constants.res1920_1080 ? 4 : 3
+                height: parent.height - 30
+                width: 4
                 anchors.verticalCenter: parent.verticalCenter
-                color: themeItem.textColor
+                radius: 2
+                color: "#ffffff"
+                opacity: 0.7
             }
 
             Text {
@@ -123,7 +132,7 @@ Rectangle {
                 wrapMode: Text.WordWrap
                 font.family: themeItem.fontFamily
                 font.weight: themeItem.fontWeight
-                color: themeItem.titleColor
+                color: "#ffffff"
                 text: "Self Service"
             }
         }

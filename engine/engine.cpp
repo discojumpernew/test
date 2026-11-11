@@ -1,7 +1,15 @@
 #include "engine.h"
 #include "DBManager.h"
 
+#include <QFile>
+#include <QJsonDocument>
+#include <QJsonObject>
+
 #define LOG_DEBUG 1
+
+#ifndef APP_VERSION
+#define APP_VERSION "1.1.0"
+#endif
 
 QString shop_id_str;
 unsigned bonus = 0;
@@ -10,6 +18,8 @@ Engine::Engine(QString appdir, QObject* parent)
     : QObject(parent)
 {
     Engine::appdir = appdir;
+
+    LoadIdentity();
 
     modbusController = new ModbusController();
 
@@ -28,6 +38,8 @@ Engine::Engine(QString appdir, QObject* parent)
     QObject::connect(dbManager, &db::DBManager::AddUserResult, this, &Engine::OnAddUserResultDB, Qt::QueuedConnection);
     QObject::connect(dbManager, &db::DBManager::TryLoginResult, this, &Engine::OnTryLoginResultDB, Qt::QueuedConnection);
     QObject::connect(dbManager, &db::DBManager::GetUserHistoryResult, this, &Engine::OnGetUserHistoryResultDB, Qt::QueuedConnection);
+    QObject::connect(dbManager, &db::DBManager::ValidateIdCodeResult, this, &Engine::OnValidateIdCodeResultDB, Qt::QueuedConnection);
+    QObject::connect(dbManager, &db::DBManager::BlockStatusResult, this, &Engine::OnBlockStatusResultDB, Qt::QueuedConnection);
 
     timer->setInterval(10);
     reconnectTimer->setInterval(30000);
@@ -56,7 +68,7 @@ Engine::~Engine()
 void Engine::onSuccessPay(int value)
 {
     if (currentUser_.has_value()) {
-        dbManager->AddToHistory(requestTracker_.nextId(), currentUser_->userId, value);
+        dbManager->AddToHistory(requestTracker_.nextId(), currentUser_->userId, value, idCode_);
     }
 
     newBalance = balance() + value;
@@ -76,6 +88,14 @@ void Engine::networkLogout()
 
 void Engine::sendHeartbeat()
 {
+    // дистанционная блокировка поста/мойки: проверяем раз в ~15 секунд
+    if (hasIdCode_ && ++blockCheckCounter_ >= 15) {
+        blockCheckCounter_ = 0;
+        auto requestId = requestTracker_.nextId();
+        activeRequests_.insert(requestId);
+        dbManager->CheckBlockStatus(requestId, idCode_);
+    }
+
     if (lastBeat.secsTo(QTime::currentTime()) > 10) {
         networkLogout();
         lastBeat = QTime::currentTime();
@@ -99,6 +119,84 @@ void Engine::OnPulseResultDB(quint64 qId, db::QueryStatus result)
         if (result == db::QueryStatus::Success) {
             lastBeat = QTime::currentTime();
         }
+    }
+}
+
+void Engine::submitIdCode(const QString& code)
+{
+    QString trimmed = code.trimmed();
+    if (trimmed.isEmpty()) {
+        emit showSessionMessage(true, QString::fromUtf8("Введите ID код."));
+        return;
+    }
+
+    pendingIdCode_ = trimmed;
+
+    auto requestId = requestTracker_.nextId();
+    activeRequests_.insert(requestId);
+    WaitDBAnswer(requestId);
+    dbManager->ValidateIdCode(requestId, trimmed);
+}
+
+void Engine::OnValidateIdCodeResultDB(quint64 qId, db::QueryStatus status, bool blocked)
+{
+    if (activeRequests_.find(qId) == activeRequests_.end())
+        return;
+
+    activeRequests_.remove(qId);
+
+    if (waitId_.has_value() && *waitId_ == qId) {
+        waitId_.reset();
+        emit loadingHidden();
+    }
+
+    switch (status) {
+    case db::QueryStatus::Success: {
+        if (blocked) {
+            emit showSessionMessage(true, QString::fromUtf8("Этот пост заблокирован. Обратитесь к администратору."));
+            break;
+        }
+
+        idCode_ = pendingIdCode_;
+        hasIdCode_ = true;
+        SaveIdentity();
+        emit idCodeChanged();
+        emit showSessionMessage(false, QString::fromUtf8("ID код принят."));
+        emit showWaiting(true);
+        emit showSession(0);
+        break;
+    }
+    case db::QueryStatus::NotFound: {
+        emit showSessionMessage(true, QString::fromUtf8("Неизвестный ID код. Проверьте ввод."));
+        break;
+    }
+    case db::QueryStatus::DbError: {
+        emit showSessionMessage(true, QString::fromUtf8("Нет подключения к сети. Попробуйте позже."));
+        break;
+    }
+    default:
+        break;
+    }
+}
+
+void Engine::OnBlockStatusResultDB(quint64 qId, bool blocked)
+{
+    if (activeRequests_.find(qId) != activeRequests_.end())
+        activeRequests_.remove(qId);
+
+    if (blocked == m_isBlocked)
+        return;
+
+    m_isBlocked = blocked;
+    emit blockedChanged();
+
+    if (blocked) {
+        LogoutUser();
+        emit showBlockedPage(true);
+    } else {
+        emit showBlockedPage(false);
+        emit showWaiting(true);
+        emit showSession(0);
     }
 }
 
@@ -130,6 +228,11 @@ void Engine::initEvent()
     bonus = ui_config.value("bonus").toInt();
 
     emit setUIConfig(ui_config);
+
+    // пост не активирован ID кодом — показываем экран активации
+    if (!hasIdCode_) {
+        emit showIdSetup();
+    }
     //=========================================
 
     // emit showSessionLocal();
@@ -217,6 +320,9 @@ int Engine::waitingEvent()
     setBalance(session.balance);
     setTime(QString::number(session.minute).rightJustified(2, '0') + ":" + QString::number(session.seconds).rightJustified(2, '0'));
 
+    if (m_isBlocked)
+        return modbusController->writeButtons(0x80); // пауза: пост заблокирован дистанционно
+
     error = modbusController->writeButtons(128 | BalanceRoutine());
     return error;
 }
@@ -232,6 +338,10 @@ int Engine::sessionEvent()
 
     setBalance(session.balance);
     setTime(QString::number(session.minute).rightJustified(2, '0') + ":" + QString::number(session.seconds).rightJustified(2, '0'));
+
+    if (m_isBlocked)
+        return modbusController->writeButtons(0x80); // пауза: пост заблокирован дистанционно
+
     if (pbuttons & 0x80)
         setPauseTime(QString::number(session.pause_minute).rightJustified(2, '0') + ":" + QString::number(session.pause_seconds).rightJustified(2, '0'));
 
@@ -602,7 +712,7 @@ void Engine::setBalance(int balance)
     if (currentUser_.has_value()) {
         auto requestId = requestTracker_.nextId();
         activeRequests_.insert(requestId);
-        dbManager->WriteNewBalance(requestId, currentUser_->userId, balance);
+        dbManager->WriteNewBalance(requestId, currentUser_->userId, balance, idCode_);
     }
 
     m_balance = balance;
@@ -759,6 +869,62 @@ bool Engine::hasCurrentUser() const
 {
     return currentUser_.has_value();
 }
+
+bool Engine::hasIdCode() const
+{
+    return hasIdCode_;
+}
+
+QString Engine::idCode() const
+{
+    return idCode_;
+}
+
+bool Engine::isBlocked() const
+{
+    return m_isBlocked;
+}
+
+QString Engine::appVersion() const
+{
+    return QString::fromLatin1(APP_VERSION);
+}
+
+void Engine::LoadIdentity()
+{
+    QFile file(appdir + FILE_PATH_ID_CONFIG);
+    if (!file.open(QIODevice::ReadOnly)) {
+        hasIdCode_ = false;
+        return;
+    }
+
+    QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
+    file.close();
+
+    QString code = doc.object().value("id_code").toString().trimmed();
+    if (!code.isEmpty()) {
+        idCode_ = code;
+        hasIdCode_ = true;
+    } else {
+        hasIdCode_ = false;
+    }
+}
+
+void Engine::SaveIdentity()
+{
+    QJsonObject obj;
+    obj.insert("id_code", idCode_);
+
+    QFile file(appdir + FILE_PATH_ID_CONFIG);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+        qWarning() << "Failed to save id.json:" << file.errorString();
+        return;
+    }
+
+    file.write(QJsonDocument(obj).toJson(QJsonDocument::Indented));
+    file.close();
+}
+
 
 void Engine::setIsPauseFree(bool ispause_free)
 {
