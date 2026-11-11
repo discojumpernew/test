@@ -638,3 +638,5 @@ compile_commands.json
 *creator.user*
 
 *_qmlcache.qrc
+# GitHub Actions workflows must never be ignored by build patterns
+!.github/workflows/*

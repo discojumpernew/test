@@ -1,0 +1,66 @@
+name: Build Windows
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Qt 6.8 (MSVC 2022 x64)
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.1'
+          host: 'windows'
+          target: 'desktop'
+          arch: 'win64_msvc2022_64'
+          # WebEngine is MSVC-only on Windows, hence the arch above.
+          modules: >-
+            qtserialport
+            qtserialbus
+            qtmultimedia
+            qtvirtualkeyboard
+            qtwebview
+            qtwebchannel
+            qtwebengine
+            qtwebsockets
+          cache: true
+
+      - name: Setup MSVC environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Build (qmake + nmake)
+        shell: cmd
+        run: |
+          qmake IPS4MCO.pro
+          nmake release
+
+      - name: Deploy runtime files (windeployqt)
+        shell: cmd
+        run: |
+          mkdir dist
+          copy release\IPS4MCO.exe dist\
+          windeployqt --release --compiler-runtime --qmldir qml dist\IPS4MCO.exe
+          xcopy /E /I /Y config dist\config\
+          xcopy /E /I /Y fonts dist\fonts\
+          copy /Y instruction.jpg dist\
+          copy /Y icon.ico dist\
+
+      - name: Package ZIP
+        shell: pwsh
+        run: Compress-Archive -Path dist\* -DestinationPath IPS4MCO-windows.zip
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: IPS4MCO-windows
+          path: IPS4MCO-windows.zip
+          retention-days: 30
