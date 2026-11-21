@@ -14,6 +14,9 @@ SessionForm {
     readonly property int cbtn8_msk: 0x40
     readonly property int cbtn9_msk: 0x100
     readonly property int cbtn10_msk: 0x200
+    // ChTreid 01.51: программа 7 (ОСМОС) — бит 14, программа 8 (БЛЕСК-ЭФФЕКТ) — бит 15
+    readonly property int cbtn11_msk: 0x4000
+    readonly property int cbtn12_msk: 0x8000
     readonly property int cbtn_pause_msk: 0x80
     signal resetButtons
 
@@ -28,6 +31,8 @@ SessionForm {
         btn8.checked = false
         btn9.checked = false
         btn10.checked = false
+        btn11.checked = false
+        btn12.checked = false
         pause_btn.checked = true
 
         // Сброс подсветки на сервисных кнопках
@@ -54,6 +59,8 @@ SessionForm {
         btn8.checked = current_button === cbtn8_msk
         btn9.checked = current_button === cbtn9_msk
         btn10.checked = current_button === cbtn10_msk
+        btn11.checked = current_button === cbtn11_msk
+        btn12.checked = current_button === cbtn12_msk
         pause_btn.checked = current_button === cbtn_pause_msk
 
         // Сервисные кнопки гасим всегда, когда кликнули на другую
@@ -93,6 +100,12 @@ SessionForm {
     }
     btn10.onButtonClicked: {
         clikedButton(cbtn10_msk)
+    }
+    btn11.onButtonClicked: {
+        clikedButton(cbtn11_msk)
+    }
+    btn12.onButtonClicked: {
+        clikedButton(cbtn12_msk)
     }
 
     pause_btn.onButtonClicked: {
@@ -199,6 +212,8 @@ SessionForm {
             btn8.checked = button === cbtn8_msk
             btn9.checked = button === cbtn9_msk
             btn10.checked = button === cbtn10_msk
+            btn11.checked = button === cbtn11_msk
+            btn12.checked = button === cbtn12_msk
             pause_btn.checked = button === cbtn_pause_msk
         }
 

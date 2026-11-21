@@ -173,7 +173,8 @@ ModbusController::s_session ModbusController::readInSession()
         modbusDevice->data(QModbusDataUnit::HoldingRegisters, REG_BALANCE, &balance);
         modbusDevice->data(QModbusDataUnit::HoldingRegisters, REG_PAUSE_TIME, &pause_time);
 
-        session.buttons = (raw_status1 & 0x80FF);
+        // ChTreid 01.51: биты 14/15 рег.1 — подтверждение запуска программ 7/8
+        session.buttons = (raw_status1 & 0xC0FF);
         session.ispause_free = (raw_status2 & 0x4);
 
         session.balance = balance;

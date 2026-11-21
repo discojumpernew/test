@@ -17,6 +17,8 @@ Rectangle {
 
     property alias balance: balance
     property alias btn10: btn10
+    property alias btn11: btn11
+    property alias btn12: btn12
     property alias btn9: btn9
     property alias btn8: btn8
     property alias btn7: btn7
@@ -425,7 +427,7 @@ Rectangle {
             ProgramButton {
                 id: btn5
                 darkTheme: container.darkTheme
-                width: (parent.width - 40) / 3
+                width: (parent.width - 60) / 4
                 height: parent.height
                 enableBorder: true
                 enabled: !container.isWaiting
@@ -454,7 +456,7 @@ Rectangle {
             ProgramButton {
                 id: btn4
                 darkTheme: container.darkTheme
-                width: (parent.width - 40) / 3
+                width: (parent.width - 60) / 4
                 height: parent.height
                 enableBorder: true
                 enabled: !container.isWaiting
@@ -483,7 +485,7 @@ Rectangle {
             ProgramButton {
                 id: btn3
                 darkTheme: container.darkTheme
-                width: (parent.width - 40) / 3
+                width: (parent.width - 60) / 4
                 height: parent.height
                 enableBorder: true
                 enabled: !container.isWaiting
@@ -495,6 +497,35 @@ Rectangle {
                 Text {
                     horizontalAlignment: Text.AlignHCenter
                     text: "ВЫСОКОЕ\nДАВЛЕНИЕ"
+                    color: parent.checked ? themeItem.buttonActiveTextColor : themeItem.buttonTextColor
+                    font.family: myFont.name
+                    font.pointSize: themeItem.fontSize - 4
+                    font.weight: themeItem.fontWeight
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.bottom: parent.bottom
+                    anchors.leftMargin: 8
+                    anchors.rightMargin: 8
+                    anchors.bottomMargin: 32
+                    verticalAlignment: Text.AlignBottom
+                }
+            }
+
+            ProgramButton {
+                id: btn11
+                darkTheme: container.darkTheme
+                width: (parent.width - 60) / 4
+                height: parent.height
+                enableBorder: true
+                enabled: !container.isWaiting
+                text: ""
+                iconSource: "qrc:weakPressureIcon"
+                iconSize: 0.7
+                iconOffsetY: -30
+
+                Text {
+                    horizontalAlignment: Text.AlignHCenter
+                    text: "ОСМОС"
                     color: parent.checked ? themeItem.buttonActiveTextColor : themeItem.buttonTextColor
                     font.family: myFont.name
                     font.pointSize: themeItem.fontSize - 4
@@ -607,7 +638,7 @@ Rectangle {
         ProgramButton {
             id: btn6
             darkTheme: container.darkTheme
-            width: (parent.width -40) / 3
+            width: (parent.width -60) / 4
             height: parent.height
             iconSource: "qrc:foamPinkIcon"
             iconSize: 0.65
@@ -635,7 +666,7 @@ Rectangle {
         ProgramButton {
             id: btn7
             darkTheme: container.darkTheme
-            width: (parent.width -40) / 3
+            width: (parent.width -60) / 4
             height: parent.height
             text: ""
             iconSource: "qrc:foamYellowIcon"
@@ -663,7 +694,7 @@ Rectangle {
         ProgramButton {
             id: btn8
             darkTheme: container.darkTheme
-            width: (parent.width -40) / 3
+            width: (parent.width -60) / 4
             height: parent.height
             iconSource: "qrc:foamWhiteIcon"
             text: ""
@@ -674,6 +705,34 @@ Rectangle {
             Text {
                 horizontalAlignment: Text.AlignHCenter
                 text: "ПЕНА\nБЕЛАЯ"
+                color: parent.checked ? themeItem.buttonActiveTextColor : themeItem.buttonTextColor
+                font.family: myFont.name
+                font.pointSize: themeItem.fontSize - 4
+                font.weight: themeItem.fontWeight
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                anchors.leftMargin: 8
+                anchors.rightMargin: 8
+                anchors.bottomMargin: 24
+                verticalAlignment: Text.AlignBottom
+            }
+        }
+
+        ProgramButton {
+            id: btn12
+            darkTheme: container.darkTheme
+            width: (parent.width -60) / 4
+            height: parent.height
+            iconSource: "qrc:waxIcon"
+            text: ""
+            iconSize: 0.65
+            iconOffsetY: -20
+            enabled: !container.isWaiting
+
+            Text {
+                horizontalAlignment: Text.AlignHCenter
+                text: "БЛЕСК\nЭФФЕКТ"
                 color: parent.checked ? themeItem.buttonActiveTextColor : themeItem.buttonTextColor
                 font.family: myFont.name
                 font.pointSize: themeItem.fontSize - 4
