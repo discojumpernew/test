@@ -79,6 +79,14 @@ public:
         }
     }
 
+    // Ворота: бит 13 регистра 0 (ChTreid). ПЛК открывает ворота по переднему
+    // фронту бита (DO8, импульс 1 с). Панель держит бит ~1.5 с и снимает.
+    Q_INVOKABLE void openGates()
+    {
+        gateHold = true;
+        gateTimer.start();
+    }
+
     explicit Engine(QString appdir, QObject* parent = nullptr);
     ~Engine();
 
@@ -230,6 +238,8 @@ private:
     QTimer* initTimer;
     QElapsedTimer* elapsedTimer;
     QElapsedTimer* elapsedTimerSession;
+    QElapsedTimer gateTimer;
+    bool gateHold = false;
     QTimer* heartBeat;
 
     int state;

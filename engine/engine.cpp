@@ -323,7 +323,11 @@ int Engine::waitingEvent()
     if (m_isBlocked)
         return modbusController->writeButtons(0x80); // пауза: пост заблокирован дистанционно
 
-    error = modbusController->writeButtons(128 | BalanceRoutine());
+    // Ворота: держим бит 13 (0x2000) ~1.5 с после нажатия кнопки на заставке
+    if (gateHold && gateTimer.elapsed() > 1500)
+        gateHold = false;
+
+    error = modbusController->writeButtons(128 | BalanceRoutine() | (gateHold ? 0x2000 : 0x0000));
     return error;
 }
 
@@ -345,6 +349,11 @@ int Engine::sessionEvent()
     if (pbuttons & 0x80)
         setPauseTime(QString::number(session.pause_minute).rightJustified(2, '0') + ":" + QString::number(session.pause_seconds).rightJustified(2, '0'));
 
+    // Ворота: держим бит 13 (0x2000) ~1.5 с после нажатия кнопки на заставке
+    if (gateHold && gateTimer.elapsed() > 1500)
+        gateHold = false;
+    const quint16 gateBit = (gateHold ? 0x2000 : 0x0000);
+
     if (elapsedTimerSession->isValid()) {
         if (elapsedTimerSession->elapsed() < slide_change_timeout)
             return error;
@@ -355,7 +364,7 @@ int Engine::sessionEvent()
     if (write_buttons) {
         elapsedTimer->start();
         write_buttons = false;
-        error = modbusController->writeButtons(pbuttons | BalanceRoutine());
+        error = modbusController->writeButtons(pbuttons | BalanceRoutine() | gateBit);
         if (error)
             return error;
     } else if ((pbuttons == 0) && (session.buttons != 0)) {
@@ -363,7 +372,7 @@ int Engine::sessionEvent()
     } else if (pbuttons != session.buttons) {
         if (elapsedTimer->elapsed() > button_timeout) {
             elapsedTimer->invalidate();
-            error = modbusController->writeButtons(session.buttons | BalanceRoutine());
+            error = modbusController->writeButtons(session.buttons | BalanceRoutine() | gateBit);
             emit setPressedButtons(session.buttons);
         }
     } else if (pbuttons == session.buttons) {

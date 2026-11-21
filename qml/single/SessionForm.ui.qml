@@ -991,4 +991,168 @@ Rectangle {
             }
         }
     }
+
+    // ===== Заставка ожидания: 4 жирные кнопки (видна, пока нет сессии) =====
+    Rectangle {
+        id: waitingSplash
+        visible: container.isWaiting
+        color: "transparent"
+        z: 500
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: waterRect.top
+        anchors.bottom: parent.bottom
+
+        Rectangle {
+            anchors.fill: parent
+            color: themeItem.appBackground
+            opacity: 0.94
+        }
+
+        Column {
+            anchors.centerIn: parent
+            spacing: 24
+            width: parent.width / 10 * 9
+
+            Row {
+                spacing: 24
+                width: parent.width
+
+                ProgramButton {
+                    id: splash_pay
+                    darkTheme: container.darkTheme
+                    width: (parent.width - 24) / 2
+                    height: (waitingSplash.height - 24) / 2
+                    enableBorder: true
+                    iconSource: "qrc:balanceIcon"
+                    iconSize: 0.55
+                    iconOffsetY: -40
+                    text: ""
+
+                    onButtonClicked: backend.showPSection()
+
+                    Text {
+                        horizontalAlignment: Text.AlignHCenter
+                        text: "ОПЛАТИТЬ"
+                        color: parent.checked ? themeItem.buttonActiveTextColor : themeItem.buttonTextColor
+                        font.family: myFont.name
+                        font.pointSize: themeItem.fontSize + 4
+                        font.weight: themeItem.fontWeight
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.bottom: parent.bottom
+                        anchors.leftMargin: 8
+                        anchors.rightMargin: 8
+                        anchors.bottomMargin: 32
+                        verticalAlignment: Text.AlignBottom
+                    }
+                }
+
+                ProgramButton {
+                    id: splash_gates
+                    darkTheme: container.darkTheme
+                    width: (parent.width - 24) / 2
+                    height: (waitingSplash.height - 24) / 2
+                    enableBorder: true
+                    iconSource: ""
+                    iconSize: 0.5
+                    iconOffsetY: -40
+                    text: ""
+
+                    onButtonClicked: {
+                        splash_gates.checked = true
+                        splash_gates_timer.restart()
+                        backend.openGates()
+                    }
+
+                    Text {
+                        horizontalAlignment: Text.AlignHCenter
+                        text: "ОТКРЫТЬ\nВОРОТА"
+                        color: parent.checked ? themeItem.buttonActiveTextColor : themeItem.buttonTextColor
+                        font.family: myFont.name
+                        font.pointSize: themeItem.fontSize + 4
+                        font.weight: themeItem.fontWeight
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.bottom: parent.bottom
+                        anchors.leftMargin: 8
+                        anchors.rightMargin: 8
+                        anchors.bottomMargin: 32
+                        verticalAlignment: Text.AlignBottom
+                    }
+                }
+            }
+
+            Row {
+                spacing: 24
+                width: parent.width
+
+                ProgramButton {
+                    id: splash_instruction
+                    darkTheme: container.darkTheme
+                    width: (parent.width - 24) / 2
+                    height: (waitingSplash.height - 24) / 2
+                    enableBorder: true
+                    iconSource: "qrc:instructionIcon"
+                    iconSize: 0.5
+                    iconOffsetY: -40
+                    text: ""
+
+                    onButtonClicked: backend.showInstruction()
+
+                    Text {
+                        horizontalAlignment: Text.AlignHCenter
+                        text: "ИНСТРУКЦИЯ"
+                        color: parent.checked ? themeItem.buttonActiveTextColor : themeItem.buttonTextColor
+                        font.family: myFont.name
+                        font.pointSize: themeItem.fontSize + 4
+                        font.weight: themeItem.fontWeight
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.bottom: parent.bottom
+                        anchors.leftMargin: 8
+                        anchors.rightMargin: 8
+                        anchors.bottomMargin: 32
+                        verticalAlignment: Text.AlignBottom
+                    }
+                }
+
+                ProgramButton {
+                    id: splash_login
+                    darkTheme: container.darkTheme
+                    width: (parent.width - 24) / 2
+                    height: (waitingSplash.height - 24) / 2
+                    enableBorder: true
+                    iconSource: "qrc:loginIcon"
+                    iconSize: 0.5
+                    iconOffsetY: -40
+                    text: ""
+
+                    onButtonClicked: backend.showLogin()
+
+                    Text {
+                        horizontalAlignment: Text.AlignHCenter
+                        text: "ЛИЧНЫЙ\nКАБИНЕТ"
+                        color: parent.checked ? themeItem.buttonActiveTextColor : themeItem.buttonTextColor
+                        font.family: myFont.name
+                        font.pointSize: themeItem.fontSize + 4
+                        font.weight: themeItem.fontWeight
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.bottom: parent.bottom
+                        anchors.leftMargin: 8
+                        anchors.rightMargin: 8
+                        anchors.bottomMargin: 32
+                        verticalAlignment: Text.AlignBottom
+                    }
+                }
+            }
+        }
+
+        Timer {
+            id: splash_gates_timer
+            interval: 2000
+            onTriggered: splash_gates.checked = false
+        }
+    }
 }

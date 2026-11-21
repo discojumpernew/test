@@ -1,3 +1,5 @@
+#include <QSharedMemory>
+
 #include <QGuiApplication>
 
 #include <QQmlApplicationEngine>
@@ -19,6 +21,13 @@ int main(int argc, char* argv[])
 
     QtWebEngineQuick::initialize();
     QGuiApplication app(argc, argv);
+
+    // Запрещаем запуск второго экземпляра приложения
+    QSharedMemory singleInstance("IPS4MCO_Terminal_SingleInstance");
+    if (!singleInstance.create(1)) {
+        qWarning() << "IPS4MCO is already running. Exiting second instance.";
+        return 0;
+    }
 
     QString appdir = QGuiApplication::applicationDirPath();
     {
