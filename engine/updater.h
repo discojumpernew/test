@@ -35,6 +35,7 @@ private slots:
 private:
     void setStatusText(const QString& text);
     void startDownload(const QString& url);
+    void requestVersion();
     bool isNewerVersion(const QString& remote, const QString& current) const;
     void applyUpdate();
     static int versionPart(const QString& v, int idx);
@@ -54,6 +55,7 @@ private:
 
     QTimer* checkTimer;
     bool busy = false;
+    bool retriedNoAuth = false;
 };
 
 #endif // UPDATER_H

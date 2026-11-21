@@ -87,7 +87,12 @@ void Updater::checkForUpdates()
         return;
 
     busy = true;
+    retriedNoAuth = false;
+    requestVersion();
+}
 
+void Updater::requestVersion()
+{
     QNetworkRequest req{ QUrl(updateUrl) };
     req.setRawHeader("User-Agent", "IPS4MCO-Updater");
     req.setRawHeader("Accept", "application/vnd.github+json");
@@ -107,6 +112,16 @@ void Updater::onVersionCheckFinished()
     QByteArray data = versionReply->readAll();
     versionReply->deleteLater();
     versionReply = nullptr;
+
+    // Токен устарел/отозван, а репозиторий публичный — повторяем запрос без авторизации
+    if (err == QNetworkReply::AuthenticationRequiredError && !updateToken.isEmpty() && !retriedNoAuth) {
+        qWarning() << "Update check: token rejected (401), retrying without token";
+        updateToken.clear();
+        retriedNoAuth = true;
+        requestVersion();
+        return;
+    }
+
     busy = false;
 
     if (err != QNetworkReply::NoError) {
@@ -185,7 +200,8 @@ void Updater::onDownloadFinished()
     if (!downloadReply)
         return;
 
-    bool ok = (downloadReply->error() == QNetworkReply::NoError);
+    QNetworkReply::NetworkError nerr = downloadReply->error();
+    bool ok = (nerr == QNetworkReply::NoError);
     QByteArray tail = downloadReply->readAll();
     downloadFile.write(tail);
     downloadFile.close();
@@ -193,6 +209,15 @@ void Updater::onDownloadFinished()
     downloadReply->deleteLater();
     downloadReply = nullptr;
     busy = false;
+
+    // Токен отклонён на скачивании — пробуем ещё раз без авторизации
+    if (nerr == QNetworkReply::AuthenticationRequiredError && !updateToken.isEmpty() && !assetUrl.isEmpty()) {
+        qWarning() << "Update download: token rejected (401), retrying without token";
+        updateToken.clear();
+        downloadFile.remove();
+        startDownload(assetUrl);
+        return;
+    }
 
     if (!ok) {
         setStatusText(QString::fromUtf8("Ошибка скачивания обновления."));
