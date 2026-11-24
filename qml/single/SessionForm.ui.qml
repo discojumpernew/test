@@ -1009,6 +1009,21 @@ Rectangle {
             opacity: 0.94
         }
 
+        // Предупреждение, когда контроллер мойки недоступен: терминал живой,
+        // но оплату принимать нельзя.
+        Text {
+            id: offlineWarn
+            visible: backend.plcOffline
+            anchors.top: parent.top
+            anchors.topMargin: 28
+            anchors.horizontalCenter: parent.horizontalCenter
+            text: "НЕТ СВЯЗИ С ОБОРУДОВАНИЕМ"
+            color: "#ff4040"
+            font.family: myFont.name
+            font.pixelSize: themeItem.fontSize + 6
+            font.bold: true
+        }
+
         Column {
             anchors.centerIn: parent
             spacing: 24
@@ -1029,7 +1044,7 @@ Rectangle {
                     iconOffsetY: -40
                     text: ""
 
-                    onButtonClicked: backend.showPSection()
+                    onButtonClicked: backend.requestPayment()
 
                     Text {
                         horizontalAlignment: Text.AlignHCenter

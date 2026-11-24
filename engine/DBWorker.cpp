@@ -128,9 +128,15 @@ void db::DBWorker::EnsureRemoteSchema()
         qWarning() << "Failed to create washes table:" << query.lastError();
     }
 
-    // миграция: привязка пополнений к посту (игнорируем duplicate column 1060)
-    if (!query.exec("ALTER TABLE history ADD COLUMN id_code VARCHAR(32) NULL")) {
-        qDebug() << "remote history.id_code:" << query.lastError().databaseText();
+    // миграция: привязка пополнений к посту. Проверяем наличие колонки,
+    // чтобы не сыпать в лог "Duplicate column name 'id_code'".
+    bool hasIdCodeColumn = false;
+    if (query.exec("SHOW COLUMNS FROM history LIKE 'id_code'"))
+        hasIdCodeColumn = query.next();
+
+    if (!hasIdCodeColumn) {
+        if (!query.exec("ALTER TABLE history ADD COLUMN id_code VARCHAR(32) NULL"))
+            qWarning() << "remote history.id_code:" << query.lastError().databaseText();
     }
 }
 

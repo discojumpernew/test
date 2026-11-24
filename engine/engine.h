@@ -48,8 +48,15 @@ public:
     Q_PROPERTY(QString idCode READ idCode NOTIFY idCodeChanged)
     Q_PROPERTY(bool isBlocked READ isBlocked NOTIFY blockedChanged)
     Q_PROPERTY(QString appVersion READ appVersion CONSTANT)
+    // true, если контроллер мойки (ПЛК) не отвечает: терминал работает без оборудования,
+    // оплата блокируется, в интерфейсе показывается предупреждение.
+    Q_PROPERTY(bool plcOffline READ plcOffline NOTIFY plcOfflineChanged)
 
     Q_INVOKABLE void submitIdCode(const QString& code);
+
+    // Оплата из заставки ожидания: без связи с контроллером не пускаем в оплату,
+    // иначе клиент заплатит, а мойка не запустится.
+    Q_INVOKABLE void requestPayment();
 
     Q_PROPERTY(QString cleanerRate READ cleanerRate NOTIFY cleanerRateChanged)
     Q_PROPERTY(QString dryingRate READ dryingRate NOTIFY dryingRateChanged)
@@ -83,6 +90,10 @@ public:
     // фронту бита (DO8, импульс 1 с). Панель держит бит ~1.5 с и снимает.
     Q_INVOKABLE void openGates()
     {
+        if (offlineMode_) {
+            emit showSessionMessage(true, QString::fromUtf8("Нет связи с оборудованием мойки."));
+            return;
+        }
         gateHold = true;
         gateTimer.start();
     }
@@ -107,6 +118,7 @@ public:
     bool hasIdCode() const;
     QString idCode() const;
     bool isBlocked() const;
+    bool plcOffline() const;
     QString appVersion() const;
     QString cleanerRate() const;
     QString dryingRate() const;
@@ -130,6 +142,7 @@ signals:
     void showLogin();
     void showRegister();
     void showPSection();
+    void plcOfflineChanged();
     void tryLogin(QString phone, QString passwd);
     void tryRegister(QString phone, QString passwd);
 
@@ -227,6 +240,10 @@ private:
     QString pendingIdCode_;
     bool hasIdCode_ = false;
     bool m_isBlocked = false;
+    // ПЛК недоступен: заставка инициализации не должна висеть вечно.
+    bool offlineMode_ = false;
+    // Экран ошибки показываем один раз, а не каждые 10 мс.
+    bool errorPageShown_ = false;
     int blockCheckCounter_ = 0;
 
     QString appdir;
@@ -286,6 +303,11 @@ private:
     void errorEvent();
     int sessionEvent();
     int waitingEvent();
+
+    // Если ПЛК не подключился за несколько секунд — уходим в режим без контроллера,
+    // чтобы терминал не висел на заставке «ИНИЦИАЛИЗАЦИЯ».
+    void scheduleOfflineFallback();
+    void enterOfflineMode();
 
     int sessionTransition();
 

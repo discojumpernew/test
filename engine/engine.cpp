@@ -4,6 +4,8 @@
 #include <QFile>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QSerialPortInfo>
+#include <QStringList>
 
 #define LOG_DEBUG 1
 
@@ -204,6 +206,7 @@ void Engine::initEvent()
 {
     en::ConfigManager::s_modbus_config modbus_config;
     state = States::Initialization;
+    errorPageShown_ = false;
     emit showInitialization(0);
 
     QJsonObject ui_config;
@@ -229,6 +232,8 @@ void Engine::initEvent()
 
     emit setUIConfig(ui_config);
 
+    qInfo() << "identity: hasIdCode" << hasIdCode_ << "id" << idCode_;
+
     // пост не активирован ID кодом — показываем экран активации
     if (!hasIdCode_) {
         emit showIdSetup();
@@ -242,8 +247,19 @@ void Engine::initEvent()
     // Modbus device configuring
     modbus_config = en::ConfigManager::readModbusConfig(appdir + FILE_PATH_MODBUS_CONFIG, &error);
     if (error) {
+        qWarning() << "modbus config error:" << error;
         errorEvent();
         return;
+    }
+
+    // Для диагностики: какие COM-порты реально видит система
+    QStringList ports;
+    {
+        const auto infos = QSerialPortInfo::availablePorts();
+        for (const QSerialPortInfo& info : infos)
+            ports << info.portName();
+        qInfo() << "modbus port:" << modbus_config.PortName
+                << "| available ports:" << (ports.isEmpty() ? QString("<none>") : ports.join(", "));
     }
 
     // enable initialization timer
@@ -251,9 +267,28 @@ void Engine::initEvent()
         initTimer->start();
     }
 
+    // Порта нет в системе (нет адаптера/ПЛК, запуск в виртуалке) — открывать
+    // нечего, сразу работаем без контроллера, чтобы не висеть на заставке.
+    bool portExists = false;
+    for (const QString& p : ports) {
+        if (p.compare(modbus_config.PortName, Qt::CaseInsensitive) == 0) {
+            portExists = true;
+            break;
+        }
+    }
+
+    if (!portExists) {
+        qWarning() << "modbus port" << modbus_config.PortName << "is not present in the system";
+        timer->start();
+        enterOfflineMode();
+        return;
+    }
+
     error = modbusController->create();
     if (error) {
+        qWarning() << "modbus create failed:" << error;
         timer->start();
+        scheduleOfflineFallback();
         return;
     }
 
@@ -262,16 +297,93 @@ void Engine::initEvent()
         modbus_config.StopBits, modbus_config.ServerAddress,
         modbus_config.Timeout);
 
+    qInfo() << "modbus connect result:" << error
+            << "| connected:" << modbusController->isConnected();
+
+    if (error)
+        scheduleOfflineFallback();
+
     timer->start();
 
     //=========================================
+}
+
+// ПЛК недоступен (нет COM-порта, нет питания, обрыв) — не держим терминал
+// на заставке «ИНИЦИАЛИЗАЦИЯ»: через несколько секунд показываем рабочий экран
+// ожидания с предупреждением. Переподключение продолжаем в фоне.
+void Engine::scheduleOfflineFallback()
+{
+    QTimer::singleShot(5000, this, [this]() {
+        if (modbusController->isConnected())
+            return;
+        if (state != States::Initialization)
+            return;
+        enterOfflineMode();
+    });
+}
+
+void Engine::enterOfflineMode()
+{
+    if (offlineMode_)
+        return;
+
+    qWarning() << "PLC is not available — entering offline mode (no wash controller)";
+    offlineMode_ = true;
+    emit plcOfflineChanged();
+
+    // пока без контроллера — пробуем переподключиться почаще
+    reconnectTimer->setInterval(10000);
+
+    initTimer->stop();
+    elapsedTimer->invalidate();
+    state = States::Waiting;
+
+    // Если пост ещё не активирован — оставляем экран ввода ID кода,
+    // иначе показываем рабочий экран ожидания.
+    if (hasIdCode_) {
+        emit showWaiting(true);
+        emit showSession(0);
+        emit showSessionMessage(true, QString::fromUtf8(
+            "Нет связи с оборудованием мойки. Оплата временно недоступна."));
+    } else {
+        emit showSessionMessage(true, QString::fromUtf8(
+            "Нет связи с оборудованием мойки."));
+    }
 }
 
 //==========================================
 // Event States
 void Engine::errorEvent()
 {
-    if (!initTimer->isActive()) {
+    // Терминал уже работает без контроллера: экран ошибки не показываем,
+    // иначе он перекрывает рабочий интерфейс каждые 10 мс.
+    // Переподключение пробуем раз в 30 секунд.
+    if (offlineMode_) {
+        if (reconnectTimer->isActive())
+            return;
+
+        reconnectTimer->start();
+        int retry = modbusController->create();
+        if (!retry)
+            retry = modbusController->connect();
+
+        qInfo() << "PLC reconnect attempt:" << retry;
+
+        if (!retry && modbusController->isConnected()) {
+            qInfo() << "PLC is back — leaving offline mode";
+            offlineMode_ = false;
+            errorPageShown_ = false;
+            error = Errors::No;
+            emit plcOfflineChanged();
+            elapsedTimer->invalidate();
+            state = States::Initialization;
+            emit showWaiting(true);
+        }
+        return;
+    }
+
+    if (!initTimer->isActive() && !errorPageShown_) {
+        errorPageShown_ = true;
         emit showError(error);
     }
 
@@ -892,6 +1004,22 @@ QString Engine::idCode() const
 bool Engine::isBlocked() const
 {
     return m_isBlocked;
+}
+
+bool Engine::plcOffline() const
+{
+    return offlineMode_;
+}
+
+void Engine::requestPayment()
+{
+    if (offlineMode_) {
+        emit showSessionMessage(true, QString::fromUtf8(
+            "Нет связи с оборудованием мойки. Оплата временно недоступна."));
+        return;
+    }
+
+    emit showPSection();
 }
 
 QString Engine::appVersion() const
