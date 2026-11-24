@@ -3,7 +3,7 @@ QT += qml quick serialport serialbus multimedia multimediawidgets sql virtualkey
 CONFIG += c++17
 
 # Версия приложения (для OTA-обновления)
-APPVERSION = 1.2.9
+APPVERSION = 1.2.10
 DEFINES += APP_VERSION=\\\"$${APPVERSION}\\\"
 
 RC_ICONS = icon.ico

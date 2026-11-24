@@ -46,6 +46,7 @@
         <file alias="foamPinkIcon">qml/single/images/foamPinkIcon.png</file>
         <file alias="foamWhiteIcon">qml/single/images/foamWhiteIcon.png</file>
         <file alias="foamYellowIcon">qml/single/images/foamYellowIcon.png</file>
+        <file alias="gateIcon">qml/single/images/gateIcon.png</file>
         <file alias="instructionIcon">qml/single/images/instructionIcon.png</file>
         <file alias="loginIcon">qml/single/images/loginIcon.png</file>
         <file alias="pauseIcon">qml/single/images/pauseIcon.png</file>

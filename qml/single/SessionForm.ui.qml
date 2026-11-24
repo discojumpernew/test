@@ -34,6 +34,7 @@ Rectangle {
     property alias errorText: errorText
     property alias histroy_btn: histroy_btn
     property alias instruction_btn: instruction_btn
+    property alias gates_btn: gates_btn
     property bool isWaiting: false
 
     FontLoader {
@@ -821,9 +822,37 @@ Rectangle {
         spacing: 20
 
         ProgramButton {
+            id: gates_btn
+            darkTheme: container.darkTheme
+            width: (parent.width - 80) / 5
+            height: parent.height
+            text: ""
+            iconSource: "qrc:gateIcon"
+            iconSize: 0.46
+            iconOffsetY: 36
+            enabled: !container.isWaiting
+
+            Text {
+                horizontalAlignment: Text.AlignHCenter
+                text: "ВОРОТА"
+                color: parent.checked ? themeItem.buttonActiveTextColor : themeItem.buttonTextColor
+                font.family: myFont.name
+                font.pointSize: themeItem.fontSize + 2
+                font.weight: themeItem.fontWeight
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                anchors.leftMargin: 8
+                anchors.rightMargin: 8
+                anchors.bottomMargin: 34
+                verticalAlignment: Text.AlignBottom
+            }
+        }
+
+        ProgramButton {
             id: pause_btn
             darkTheme: container.darkTheme
-            width: (parent.width - 60) / 4
+            width: (parent.width - 80) / 5
             height: parent.height
             text: ""
             iconSource: "qrc:pauseIcon"
@@ -851,7 +880,7 @@ Rectangle {
         ProgramButton {
             id: login_btn
             darkTheme: container.darkTheme
-            width: (parent.width - 60) / 4
+            width: (parent.width - 80) / 5
             height: parent.height
             text: ""
             iconSource: "qrc:loginIcon"
@@ -879,7 +908,7 @@ Rectangle {
         ProgramButton {
             id: price_btn
             darkTheme: container.darkTheme
-            width: (parent.width - 60) / 4
+            width: (parent.width - 80) / 5
             height: parent.height
             text: ""
             iconSource: "qrc:priceIcon"
@@ -907,7 +936,7 @@ Rectangle {
         ProgramButton {
             id: instruction_btn
             darkTheme: container.darkTheme
-            width: (parent.width - 60) / 4
+            width: (parent.width - 80) / 5
             height: parent.height
             text: ""
             iconSource: "qrc:instructionIcon"
@@ -1160,10 +1189,16 @@ Rectangle {
             }
         }
 
-        Timer {
-            id: splash_gates_timer
-            interval: 2000
-            onTriggered: splash_gates.checked = false
-        }
+    Timer {
+        id: splash_gates_timer
+        interval: 2000
+        onTriggered: splash_gates.checked = false
     }
+
+    Timer {
+        id: gates_btn_timer
+        interval: 2000
+        onTriggered: gates_btn.checked = false
+    }
+}
 }

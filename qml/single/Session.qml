@@ -100,6 +100,13 @@ SessionForm {
         clikedButton(cbtn_pause_msk)
     }
 
+    gates_btn.onButtonClicked: {
+        clikedButton(cbtn_pause_msk)
+        gates_btn.checked = true
+        gates_btn_timer.restart()
+        backend.openGates()
+    }
+
     login_btn.onButtonClicked: {
         clikedButton(cbtn_pause_msk)
         login_btn.checked = true
