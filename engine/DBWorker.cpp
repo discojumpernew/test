@@ -79,10 +79,20 @@ bool db::DBWorker::TryOpenLocal()
             }
         }
 
-        // миграция: колонка id_code (игнорируем ошибку, если уже есть)
-        QSqlQuery migrate(localDB_);
-        if (!migrate.exec("ALTER TABLE history ADD COLUMN id_code TEXT")) {
-            qDebug() << "local id_code column:" << migrate.lastError().databaseText();
+        // миграция: колонка id_code (сначала проверяем, чтобы не сыпать ошибками)
+        QSqlQuery cols(localDB_);
+        bool hasIdCode = false;
+        if (cols.exec("PRAGMA table_info(history)")) {
+            while (cols.next()) {
+                if (cols.value(1).toString() == "id_code")
+                    hasIdCode = true;
+            }
+        }
+        if (!hasIdCode) {
+            QSqlQuery migrate(localDB_);
+            if (!migrate.exec("ALTER TABLE history ADD COLUMN id_code TEXT")) {
+                qWarning() << "Failed to add id_code column:" << migrate.lastError().databaseText();
+            }
         }
     }
 

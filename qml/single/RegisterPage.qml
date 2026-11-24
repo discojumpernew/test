@@ -1,4 +1,4 @@
-import QtQuick 2.4
+import QtQuick 2.15
 import QtQuick.Controls 2.4
 import QtQuick.Layouts 1.1
 import IPS4MCO 1.0

@@ -81,31 +81,67 @@ jobs:
           }
           Get-ChildItem dist\*.dll | Where-Object { $_.Name -match "msvcp|vcruntime|concrt" } | ForEach-Object { Write-Host $_.Name }
 
-      - name: Ensure MySQL driver and QtPositioning module
+      - name: Download MariaDB Connector/C (client library for QMYSQL)
         shell: pwsh
         run: |
-          # windeployqt НЕ копирует QMYSQL/QtPositioning, а терминалу без них
-          # не подключиться к базе и не загрузиться QtWebView-экранам.
+          curl.exe -sL -o mariadb.msi https://dlm.mariadb.com/Connectors/c/connector-c-3.4.5/mariadb-connector-c-3.4.5-win64.msi
+          if (-not (Test-Path mariadb.msi)) { Write-Host "::error::mariadb.msi download failed"; exit 1 }
+          $p = Start-Process msiexec -ArgumentList "/a","mariadb.msi","/qn","/norestart","TARGETDIR=$env:GITHUB_WORKSPACE\mariadb" -Wait -PassThru
+          if ($p.ExitCode -ne 0) { Write-Host "::error::msiexec extract failed: $($p.ExitCode)"; exit 1 }
+
+          # Locate headers and libraries (MSI layout varies slightly)
+          $inc   = Get-ChildItem -Recurse mariadb -Filter mysql.h | Select-Object -First 1
+          $lib   = Get-ChildItem -Recurse mariadb -Filter libmariadb.lib | Select-Object -First 1
+          $dll   = Get-ChildItem -Recurse mariadb -Filter libmariadb.dll | Select-Object -First 1
+          if (-not $inc -or -not $dll) { Write-Host "::error::mariadb files not found after extract"; exit 1 }
+          Write-Host "headers: $($inc.DirectoryName)"
+          Write-Host "dll:     $($dll.FullName)"
+
+          New-Item -ItemType Directory -Force C:\mariadb\include | Out-Null
+          New-Item -ItemType Directory -Force C:\mariadb\lib    | Out-Null
+          Copy-Item "$($inc.DirectoryName)\*" C:\mariadb\include\ -Recurse -Force
+          Copy-Item $dll.FullName C:\mariadb\lib\
+
+          if ($lib) {
+            Copy-Item $lib.FullName C:\mariadb\lib\
+          } else {
+            Write-Host "libmariadb.lib not in MSI - generating import library from DLL"
+            $out  = & dumpbin /exports $dll.FullName
+            $names = $out | Select-String -Pattern '^\s+\d+\s+[0-9A-Fa-f]+\s+[0-9A-Fa-f]+\s+(\w+)' |
+                     ForEach-Object { $_.Matches[0].Groups[1].Value }
+            ("EXPORTS`r`n" + (($names | ForEach-Object { "    $_" }) -join "`r`n")) |
+              Out-File C:\mariadb\lib\libmariadb.def -Encoding ascii
+            & lib /def:C:\mariadb\lib\libmariadb.def /out:C:\mariadb\lib\libmariadb.lib /machine:x64
+            if ($LASTEXITCODE -ne 0) { exit 1 }
+          }
+          Get-ChildItem C:\mariadb\lib
+
+      - name: Build MySQL driver (qsqlmysql)
+        shell: cmd
+        run: |
+          cd sqldrivers\mysql
+          qmake mysql.pro "INCLUDEPATH+=C:/mariadb/include" "LIBS+=-LC:/mariadb/lib -llibmariadb"
+          if errorlevel 1 exit /b 1
+          nmake release
+          if errorlevel 1 exit /b 1
+          dir release
+
+      - name: Install MySQL driver into dist (+ QtPositioning module)
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist\sqldrivers | Out-Null
+          Copy-Item sqldrivers\mysql\release\qsqlmysql.dll dist\sqldrivers\ -Force
+          if (-not (Test-Path dist\sqldrivers\qsqlmysql.dll)) { Write-Host "::error::qsqlmysql.dll missing"; exit 1 }
+          # клиентская библиотека и её соседи по папке (libssl и т.п., если есть)
+          Copy-Item C:\mariadb\lib\*.dll dist\ -Force
+          Write-Host "OK: qsqlmysql.dll + libmariadb.dll installed"
+
+          # windeployqt не кладёт qml/QtPositioning, а QtWebView-экранам он нужен
           $qtdir = $env:QT_ROOT_DIR
           if (-not $qtdir) { $qtdir = Split-Path (Get-Command qmake).Source -Parent }
-          Write-Host "Qt dir: $qtdir"
-
-          $drv = Join-Path $qtdir "plugins\sqldrivers\qsqlmysql.dll"
-          if (Test-Path $drv) {
-            New-Item -ItemType Directory -Force -Path dist\sqldrivers | Out-Null
-            Copy-Item $drv dist\sqldrivers\ -Force
-            Write-Host "OK: qsqlmysql.dll copied"
-            foreach ($lib in @("libmysql.dll", "libmariadb.dll")) {
-              $p = Join-Path $qtdir "bin\$lib"
-              if (Test-Path $p) { Copy-Item $p dist\ -Force; Write-Host "OK: $lib copied" }
-            }
-          } else {
-            Write-Host "::warning::qsqlmysql.dll не найден в Qt — терминал не сможет подключиться к MySQL"
-          }
-
           $pos = Join-Path $qtdir "qml\QtPositioning"
           if (Test-Path $pos) {
-            New-Item -ItemType Directory -Force -Path dist\qml | Out-Null
+            New-Item -ItemType Directory -Force dist\qml | Out-Null
             Copy-Item $pos dist\qml\ -Recurse -Force
             Write-Host "OK: qml/QtPositioning copied"
           } else {
