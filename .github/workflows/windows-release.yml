@@ -81,6 +81,37 @@ jobs:
           }
           Get-ChildItem dist\*.dll | Where-Object { $_.Name -match "msvcp|vcruntime|concrt" } | ForEach-Object { Write-Host $_.Name }
 
+      - name: Ensure MySQL driver and QtPositioning module
+        shell: pwsh
+        run: |
+          # windeployqt НЕ копирует QMYSQL/QtPositioning, а терминалу без них
+          # не подключиться к базе и не загрузиться QtWebView-экранам.
+          $qtdir = $env:QT_ROOT_DIR
+          if (-not $qtdir) { $qtdir = Split-Path (Get-Command qmake).Source -Parent }
+          Write-Host "Qt dir: $qtdir"
+
+          $drv = Join-Path $qtdir "plugins\sqldrivers\qsqlmysql.dll"
+          if (Test-Path $drv) {
+            New-Item -ItemType Directory -Force -Path dist\sqldrivers | Out-Null
+            Copy-Item $drv dist\sqldrivers\ -Force
+            Write-Host "OK: qsqlmysql.dll copied"
+            foreach ($lib in @("libmysql.dll", "libmariadb.dll")) {
+              $p = Join-Path $qtdir "bin\$lib"
+              if (Test-Path $p) { Copy-Item $p dist\ -Force; Write-Host "OK: $lib copied" }
+            }
+          } else {
+            Write-Host "::warning::qsqlmysql.dll не найден в Qt — терминал не сможет подключиться к MySQL"
+          }
+
+          $pos = Join-Path $qtdir "qml\QtPositioning"
+          if (Test-Path $pos) {
+            New-Item -ItemType Directory -Force -Path dist\qml | Out-Null
+            Copy-Item $pos dist\qml\ -Recurse -Force
+            Write-Host "OK: qml/QtPositioning copied"
+          } else {
+            Write-Host "::warning::qml/QtPositioning отсутствует"
+          }
+
       - name: Verify MSVC runtime present
         shell: pwsh
         run: |
