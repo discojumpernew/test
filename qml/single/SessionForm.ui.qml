@@ -838,6 +838,8 @@ Rectangle {
                 color: parent.checked ? themeItem.buttonActiveTextColor : themeItem.buttonTextColor
                 font.family: myFont.name
                 font.pointSize: themeItem.fontSize + 2
+                minimumPointSize: 14
+                fontSizeMode: Text.Fit
                 font.weight: themeItem.fontWeight
                 anchors.left: parent.left
                 anchors.right: parent.right
@@ -866,6 +868,8 @@ Rectangle {
                 color: parent.checked ? themeItem.buttonActiveTextColor : themeItem.buttonTextColor
                 font.family: myFont.name
                 font.pointSize: themeItem.fontSize + 2
+                minimumPointSize: 14
+                fontSizeMode: Text.Fit
                 font.weight: themeItem.fontWeight
                 anchors.left: parent.left
                 anchors.right: parent.right
@@ -894,6 +898,8 @@ Rectangle {
                 color: parent.checked ? themeItem.buttonActiveTextColor : themeItem.buttonTextColor
                 font.family: myFont.name
                 font.pointSize: themeItem.fontSize - 12
+                minimumPointSize: 11
+                fontSizeMode: Text.Fit
                 font.weight: themeItem.fontWeight
                 anchors.left: parent.left
                 anchors.right: parent.right
@@ -922,6 +928,8 @@ Rectangle {
                 color: parent.checked ? themeItem.buttonActiveTextColor : themeItem.buttonTextColor
                 font.family: myFont.name
                 font.pointSize: themeItem.fontSize + 2
+                minimumPointSize: 14
+                fontSizeMode: Text.Fit
                 font.weight: themeItem.fontWeight
                 anchors.left: parent.left
                 anchors.right: parent.right
@@ -950,6 +958,8 @@ Rectangle {
                 color: parent.checked ? themeItem.buttonActiveTextColor : themeItem.buttonTextColor
                 font.family: myFont.name
                 font.pointSize: themeItem.fontSize - 12
+                minimumPointSize: 11
+                fontSizeMode: Text.Fit
                 font.weight: themeItem.fontWeight
                 anchors.left: parent.left
                 anchors.right: parent.right
