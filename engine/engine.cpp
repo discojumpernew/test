@@ -267,6 +267,12 @@ void Engine::initEvent()
         initTimer->start();
     }
 
+    // Устройство Modbus создаём ДО первого опроса таймера: иначе при работе
+    // без ПЛК tEvent() обращается к null-указателю и приложение падает.
+    error = modbusController->create();
+    if (error)
+        qWarning() << "modbus create failed:" << error;
+
     // Порта нет в системе (нет адаптера/ПЛК, запуск в виртуалке) — открывать
     // нечего, сразу работаем без контроллера, чтобы не висеть на заставке.
     bool portExists = false;
@@ -279,16 +285,9 @@ void Engine::initEvent()
 
     if (!portExists) {
         qWarning() << "modbus port" << modbus_config.PortName << "is not present in the system";
+        error = Errors::MCConnectionLost;
         timer->start();
         enterOfflineMode();
-        return;
-    }
-
-    error = modbusController->create();
-    if (error) {
-        qWarning() << "modbus create failed:" << error;
-        timer->start();
-        scheduleOfflineFallback();
         return;
     }
 

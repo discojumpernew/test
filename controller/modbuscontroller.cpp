@@ -11,7 +11,7 @@ ModbusController::ModbusController(QObject* parent)
 
 ModbusController::~ModbusController()
 {
-    if (modbusDevice->state() == QModbusDevice::ConnectedState)
+    if (modbusDevice && modbusDevice->state() == QModbusDevice::ConnectedState)
         modbusDevice->disconnect();
 
     if (modbusDevice)
@@ -57,7 +57,11 @@ void ModbusController::DebugDataWriten(QModbusDataUnit::RegisterType table, int 
 int ModbusController::connect()
 {
     error.internal = Errors::No;
-    if (modbusDevice->state() == QModbusDevice::UnconnectedState && modbusDevice) {
+    if (!modbusDevice) {
+        error.internal = Errors::MCConnect;
+        return error.internal;
+    }
+    if (modbusDevice && modbusDevice->state() == QModbusDevice::UnconnectedState) {
 
         modbusDevice->setConnectionParameter(QModbusDevice::SerialPortNameParameter, config.PortName);
         modbusDevice->setConnectionParameter(QModbusDevice::SerialParityParameter, config.Parity);
@@ -97,7 +101,7 @@ int ModbusController::disconnect()
     error.internal = Errors::No;
     controlMsgTimer->stop();
 
-    if (modbusDevice->state() == QModbusDevice::ConnectedState) {
+    if (modbusDevice && modbusDevice->state() == QModbusDevice::ConnectedState) {
         if (!modbusDevice->disconnect()) {
             error.qt = modbusDevice->error();
             error.internal = Errors::MCDisconnect;
@@ -109,7 +113,7 @@ int ModbusController::disconnect()
 
 bool ModbusController::isConnected()
 {
-    return modbusDevice->state() == QModbusDevice::ConnectedState;
+    return modbusDevice && modbusDevice->state() == QModbusDevice::ConnectedState;
 }
 
 int ModbusController::getError()
@@ -120,7 +124,7 @@ int ModbusController::getError()
 int ModbusController::writeNewBalance(quint16 value)
 {
     error.internal = Errors::No;
-    if (modbusDevice->state() == QModbusDevice::ConnectedState) {
+    if (modbusDevice && modbusDevice->state() == QModbusDevice::ConnectedState) {
         modbusDevice->setData(QModbusDataUnit::HoldingRegisters, 101, value);
     } else {
         error.internal = Errors::MCConnectionLost;
@@ -132,7 +136,7 @@ int ModbusController::writeNewBalance(quint16 value)
 int ModbusController::writeButtons(quint16 buttons)
 {
     error.internal = Errors::No;
-    if (modbusDevice->state() == QModbusDevice::ConnectedState) {
+    if (modbusDevice && modbusDevice->state() == QModbusDevice::ConnectedState) {
         modbusDevice->setData(QModbusDataUnit::HoldingRegisters, REG_CMD_FPANEL, buttons);
     } else {
         error.internal = Errors::MCConnectionLost;
@@ -146,7 +150,7 @@ int ModbusController::clearButtonState(int reg, int btn_mask)
     error.internal = Errors::No;
     quint16 regdata;
 
-    if (modbusDevice->state() == QModbusDevice::ConnectedState) {
+    if (modbusDevice && modbusDevice->state() == QModbusDevice::ConnectedState) {
         modbusDevice->data(QModbusDataUnit::HoldingRegisters, reg, &regdata);
         modbusDevice->setData(QModbusDataUnit::HoldingRegisters, reg, regdata & !btn_mask);
     } else {
@@ -166,7 +170,7 @@ ModbusController::s_session ModbusController::readInSession()
     quint16 pause_time;
     quint16 balance;
 
-    if (modbusDevice->state() == QModbusDevice::ConnectedState) {
+    if (modbusDevice && modbusDevice->state() == QModbusDevice::ConnectedState) {
         modbusDevice->data(QModbusDataUnit::HoldingRegisters, REG_CMD1_TPANEL, &raw_status1);
         modbusDevice->data(QModbusDataUnit::HoldingRegisters, REG_CMD2_TPANEL, &raw_status2);
         modbusDevice->data(QModbusDataUnit::HoldingRegisters, REG_TIME, &time);
@@ -210,6 +214,14 @@ ModbusController::s_status ModbusController::readStatus()
     status.raw = 0;
     status.pingerror = error.controlmsg;
     status.bank = false;
+
+    // устройство ещё не создано (работа без ПЛК) — не роняем приложение
+    if (!modbusDevice) {
+        error.internal = Errors::MCConnectionLost;
+        status.pingerror = true;
+        return status;
+    }
+
     QModbusDevice::State ms = modbusDevice->state();
 
     if (ms == QModbusDevice::ConnectedState) {
@@ -259,7 +271,7 @@ int ModbusController::readControlMsg()
 {
     error.controlmsg = Errors::No;
     quint16 msg = 0;
-    if (modbusDevice->state() == QModbusDevice::ConnectedState) {
+    if (modbusDevice && modbusDevice->state() == QModbusDevice::ConnectedState) {
         modbusDevice->data(QModbusDataUnit::HoldingRegisters, REG_PING, &msg);
         if (msg) {
             qDebug() << "readControlMsg: Ok";
