@@ -97,6 +97,17 @@ int main(int argc, char* argv[])
     }
 
     QString appdir = QGuiApplication::applicationDirPath();
+
+    // MySQL 8 по умолчанию использует caching_sha2_password. В MariaDB Connector/C
+    // это отдельный плагин (caching_sha2_password.dll), а не встроенный алгоритм,
+    // поэтому явно указываем коннектору папку с плагинами рядом с exe.
+    {
+        const QString pluginDir = appdir + "/mariadb-plugin";
+        qputenv("MARIADB_PLUGIN_DIR", QDir::toNativeSeparators(pluginDir).toLocal8Bit());
+        qInfo() << "MARIADB_PLUGIN_DIR:" << pluginDir
+                << "exists:" << QDir(pluginDir).exists();
+    }
+
     {
         int error = Errors::No;
         QJsonObject db_config = en::ConfigManager::readDBConfig(appdir + "/config/db.json", &error);

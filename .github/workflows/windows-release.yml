@@ -121,6 +121,15 @@ jobs:
           }
           Get-ChildItem C:\mariadb\lib
 
+          # Плагины аутентификации: caching_sha2_password (дефолт MySQL 8) — отдельный DLL
+          $plug = Get-ChildItem -Recurse mariadb -Filter "caching_sha2_password.dll" -ErrorAction SilentlyContinue |
+                  Select-Object -First 1
+          if (-not $plug) { Write-Host "::error::caching_sha2_password.dll not found in MariaDB package"; exit 1 }
+          Write-Host "auth plugin dir: $($plug.DirectoryName)"
+          New-Item -ItemType Directory -Force C:\mariadb\plugin | Out-Null
+          Copy-Item "$($plug.DirectoryName)\*.dll" C:\mariadb\plugin\ -Force
+          Get-ChildItem C:\mariadb\plugin
+
       - name: Build MySQL driver (qsqlmysql)
         shell: cmd
         run: |
@@ -140,6 +149,14 @@ jobs:
           # клиентская библиотека и её соседи по папке (libssl и т.п., если есть)
           Copy-Item C:\mariadb\lib\*.dll dist\ -Force
           Write-Host "OK: qsqlmysql.dll + libmariadb.dll installed"
+
+          # плагины аутентификации (caching_sha2_password для MySQL 8)
+          New-Item -ItemType Directory -Force dist\mariadb-plugin | Out-Null
+          Copy-Item C:\mariadb\plugin\*.dll dist\mariadb-plugin\ -Force
+          if (-not (Test-Path dist\mariadb-plugin\caching_sha2_password.dll)) {
+            Write-Host "::error::caching_sha2_password.dll missing in dist"; exit 1
+          }
+          Get-ChildItem dist\mariadb-plugin | ForEach-Object { Write-Host "OK plugin:" $_.Name }
 
           # windeployqt не кладёт qml/QtPositioning, а QtWebView-экранам он нужен
           $qtdir = $env:QT_ROOT_DIR

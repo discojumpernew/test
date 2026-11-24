@@ -43,7 +43,10 @@ bool db::DBWorker::TryOpenRemote()
         remoteDB_.setUserName(db::user);
         remoteDB_.setPassword(db::password);
         if (!remoteDB_.open()) {
-            qWarning() << "Failed to open server MySQL DB:" << remoteDB_.lastError();
+            qWarning() << "Failed to open server MySQL DB:" << remoteDB_.lastError()
+                       << "| host:" << db::host << "db:" << db::dbName << "user:" << db::user;
+            qWarning() << "SQL drivers available:" << QSqlDatabase::drivers();
+            qWarning() << "MARIADB_PLUGIN_DIR:" << qgetenv("MARIADB_PLUGIN_DIR");
             result = false;
         }
     }
