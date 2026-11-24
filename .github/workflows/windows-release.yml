@@ -62,14 +62,19 @@ jobs:
       - name: Copy MSVC runtime DLLs into dist
         shell: pwsh
         run: |
-          # ZIP должен быть самодостаточным: кладём msvcp140/vcruntime140 рядом с exe
-          $crt = Get-ChildItem "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022" -Recurse -Filter "msvcp140.dll" -ErrorAction SilentlyContinue |
-                 Where-Object { $_.FullName -like "*\x64\Microsoft.VC143.CRT\*" } |
-                 Sort-Object FullName -Descending | Select-Object -First 1
+          # ZIP должен быть самодостаточным: кладём msvcp140/vcruntime140 рядом с exe.
+          # Ищем по любой версии VS (2022, 18 и т.д.) — runner'ы меняются.
+          $roots = @("${env:ProgramFiles}\Microsoft Visual Studio", "${env:ProgramFiles(x86)}\Microsoft Visual Studio") |
+                   Where-Object { Test-Path $_ }
+          $candidates = foreach ($r in $roots) {
+            Get-ChildItem $r -Recurse -Filter "msvcp140.dll" -ErrorAction SilentlyContinue |
+              Where-Object { $_.FullName -match '\\(Redist|Tools)\\MSVC(\\[\d\.]+)?\\' -and $_.FullName -match '\\x64(\\|$)' }
+          }
+          $crt = $candidates | Sort-Object LastWriteTime -Descending | Select-Object -First 1
           if (-not $crt) {
-            $crt = Get-ChildItem "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022" -Recurse -Filter "msvcp140.dll" -ErrorAction SilentlyContinue |
-                   Where-Object { $_.FullName -like "*\x64\*" } |
-                   Sort-Object FullName -Descending | Select-Object -First 1
+            # запасной вариант: любой x64 msvcp140.dll под VS
+            $crt = $roots | ForEach-Object { Get-ChildItem $_ -Recurse -Filter "msvcp140.dll" -ErrorAction SilentlyContinue } |
+                   Where-Object { $_.FullName -match 'x64' } | Select-Object -First 1
           }
           if ($crt) {
             Write-Host "Copying CRT from: $($crt.DirectoryName)"
