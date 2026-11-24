@@ -59,24 +59,40 @@ jobs:
           copy /Y instruction.jpg dist\
           copy /Y icon.ico dist\
 
+      - name: Copy MSVC runtime DLLs into dist
+        shell: pwsh
+        run: |
+          # ZIP должен быть самодостаточным: кладём msvcp140/vcruntime140 рядом с exe
+          $crt = Get-ChildItem "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022" -Recurse -Filter "msvcp140.dll" -ErrorAction SilentlyContinue |
+                 Where-Object { $_.FullName -like "*\x64\Microsoft.VC143.CRT\*" } |
+                 Sort-Object FullName -Descending | Select-Object -First 1
+          if (-not $crt) {
+            $crt = Get-ChildItem "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022" -Recurse -Filter "msvcp140.dll" -ErrorAction SilentlyContinue |
+                   Where-Object { $_.FullName -like "*\x64\*" } |
+                   Sort-Object FullName -Descending | Select-Object -First 1
+          }
+          if ($crt) {
+            Write-Host "Copying CRT from: $($crt.DirectoryName)"
+            Copy-Item "$($crt.DirectoryName)\msvcp140*.dll" dist\
+            Copy-Item "$($crt.DirectoryName)\vcruntime140*.dll" dist\
+            Copy-Item "$($crt.DirectoryName)\concrt140.dll" dist\ -ErrorAction SilentlyContinue
+          } else {
+            Write-Host "CRT not found in VS dir, relying on windeployqt --compiler-runtime"
+          }
+          Get-ChildItem dist\*.dll | Where-Object { $_.Name -match "msvcp|vcruntime|concrt" } | ForEach-Object { Write-Host $_.Name }
+
+      - name: Verify MSVC runtime present
+        shell: pwsh
+        run: |
+          $need = @("msvcp140.dll","vcruntime140.dll","vcruntime140_1.dll")
+          foreach ($f in $need) {
+            if (-not (Test-Path "dist\$f")) { Write-Host "::error::Missing $f in dist"; exit 1 }
+            Write-Host "OK: $f"
+          }
+
       - name: Package ZIP
         shell: pwsh
         run: Compress-Archive -Path dist\* -DestinationPath IPS4MCO-windows.zip
-
-      - name: Install Inno Setup
-        shell: pwsh
-        run: choco install innosetup --no-progress -y
-
-      - name: Build installer (Inno Setup)
-        shell: pwsh
-        run: |
-          $m = Select-String -Path IPS4MCO.pro -Pattern 'APPVERSION\s*=\s*([0-9.]+)'
-          $ver = $m.Matches[0].Groups[1].Value
-          Write-Host "Version: $ver"
-          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
-          & $iscc "/DMyAppVersion=$ver" "installer\setup.iss"
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          Get-ChildItem installer-out
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -84,7 +100,6 @@ jobs:
           name: IPS4MCO-windows
           path: |
             IPS4MCO-windows.zip
-            installer-out/*.exe
           retention-days: 30
 
       - name: Create GitHub Release (for OTA)
@@ -93,5 +108,4 @@ jobs:
         with:
           files: |
             IPS4MCO-windows.zip
-            installer-out/*.exe
           generate_release_notes: true
