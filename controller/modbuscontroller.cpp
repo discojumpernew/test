@@ -113,6 +113,9 @@ int ModbusController::disconnect()
 
 bool ModbusController::isConnected()
 {
+    // в демо-режиме «контроллер» всегда на связи
+    if (demoMode_)
+        return modbusDevice != nullptr;
     return modbusDevice && modbusDevice->state() == QModbusDevice::ConnectedState;
 }
 
@@ -124,7 +127,10 @@ int ModbusController::getError()
 int ModbusController::writeNewBalance(quint16 value)
 {
     error.internal = Errors::No;
-    if (modbusDevice && modbusDevice->state() == QModbusDevice::ConnectedState) {
+    if (demoMode_ && modbusDevice) {
+        modbusDevice->setData(QModbusDataUnit::HoldingRegisters, 101, value);
+        modbusDevice->setData(QModbusDataUnit::HoldingRegisters, REG_BALANCE, value);
+    } else if (modbusDevice && modbusDevice->state() == QModbusDevice::ConnectedState) {
         modbusDevice->setData(QModbusDataUnit::HoldingRegisters, 101, value);
     } else {
         error.internal = Errors::MCConnectionLost;
@@ -136,7 +142,11 @@ int ModbusController::writeNewBalance(quint16 value)
 int ModbusController::writeButtons(quint16 buttons)
 {
     error.internal = Errors::No;
-    if (modbusDevice && modbusDevice->state() == QModbusDevice::ConnectedState) {
+    if (demoMode_ && modbusDevice) {
+        // ПЛК в реальности подтверждает нажатые программы в регистре 1 — эмулируем это
+        modbusDevice->setData(QModbusDataUnit::HoldingRegisters, REG_CMD_FPANEL, buttons);
+        modbusDevice->setData(QModbusDataUnit::HoldingRegisters, REG_CMD1_TPANEL, buttons);
+    } else if (modbusDevice && modbusDevice->state() == QModbusDevice::ConnectedState) {
         modbusDevice->setData(QModbusDataUnit::HoldingRegisters, REG_CMD_FPANEL, buttons);
     } else {
         error.internal = Errors::MCConnectionLost;
@@ -150,9 +160,10 @@ int ModbusController::clearButtonState(int reg, int btn_mask)
     error.internal = Errors::No;
     quint16 regdata;
 
-    if (modbusDevice && modbusDevice->state() == QModbusDevice::ConnectedState) {
+    if (demoMode_ && modbusDevice) {
         modbusDevice->data(QModbusDataUnit::HoldingRegisters, reg, &regdata);
-        modbusDevice->setData(QModbusDataUnit::HoldingRegisters, reg, regdata & !btn_mask);
+        modbusDevice->setData(QModbusDataUnit::HoldingRegisters, reg, regdata & ~quint16(btn_mask));
+    } else if (modbusDevice && modbusDevice->state() == QModbusDevice::ConnectedState) {
     } else {
         error.internal = Errors::MCConnectionLost;
     }
@@ -163,14 +174,14 @@ int ModbusController::clearButtonState(int reg, int btn_mask)
 ModbusController::s_session ModbusController::readInSession()
 {
     error.internal = Errors::No;
-    s_session session;
-    quint16 raw_status1;
-    quint16 raw_status2;
-    quint16 time;
-    quint16 pause_time;
-    quint16 balance;
+    s_session session = {};
+    quint16 raw_status1 = 0;
+    quint16 raw_status2 = 0;
+    quint16 time = 0;
+    quint16 pause_time = 0;
+    quint16 balance = 0;
 
-    if (modbusDevice && modbusDevice->state() == QModbusDevice::ConnectedState) {
+    if (modbusDevice && (demoMode_ || modbusDevice->state() == QModbusDevice::ConnectedState)) {
         modbusDevice->data(QModbusDataUnit::HoldingRegisters, REG_CMD1_TPANEL, &raw_status1);
         modbusDevice->data(QModbusDataUnit::HoldingRegisters, REG_CMD2_TPANEL, &raw_status2);
         modbusDevice->data(QModbusDataUnit::HoldingRegisters, REG_TIME, &time);
@@ -212,6 +223,9 @@ ModbusController::s_status ModbusController::readStatus()
     quint16 bank_dep = 0;
     s_status status;
     status.raw = 0;
+    // в демо-режиме контроллер всегда отвечает на пинг
+    if (demoMode_)
+        error.controlmsg = Errors::No;
     status.pingerror = error.controlmsg;
     status.bank = false;
 
@@ -222,7 +236,7 @@ ModbusController::s_status ModbusController::readStatus()
         return status;
     }
 
-    QModbusDevice::State ms = modbusDevice->state();
+    QModbusDevice::State ms = demoMode_ ? QModbusDevice::ConnectedState : modbusDevice->state();
 
     if (ms == QModbusDevice::ConnectedState) {
         if (error.controlmsg) {
@@ -271,6 +285,10 @@ int ModbusController::readControlMsg()
 {
     error.controlmsg = Errors::No;
     quint16 msg = 0;
+    if (demoMode_) {
+        error.controlmsg = Errors::No;
+        return error.controlmsg;
+    }
     if (modbusDevice && modbusDevice->state() == QModbusDevice::ConnectedState) {
         modbusDevice->data(QModbusDataUnit::HoldingRegisters, REG_PING, &msg);
         if (msg) {
@@ -285,4 +303,95 @@ int ModbusController::readControlMsg()
         error.controlmsg = Errors::MCConnectionLost;
     }
     return error.controlmsg;
+}
+
+// ============================================================================
+// Демо-режим: ПЛК симулируется картой регистров QModbusServer.
+// Позволяет посмотреть весь интерфейс терминала на обычном ПК (Parallels и т.п.)
+// без мойки, без COM-порта и без реальных списаний денег.
+// ============================================================================
+void ModbusController::enableDemo()
+{
+    demoMode_ = true;
+    if (!modbusDevice)
+        create();
+    if (!modbusDevice)
+        return;
+
+    for (quint16 i = 0; i <= REG_PING + 1; ++i)
+        modbusDevice->setData(QModbusDataUnit::HoldingRegisters, i, 0);
+    modbusDevice->setData(QModbusDataUnit::HoldingRegisters, REG_PING, 1);
+
+    error.internal = Errors::No;
+    error.controlmsg = Errors::No;
+
+    if (!demoTimer) {
+        demoTimer = new QTimer(this);
+        demoTimer->setInterval(1000);
+        QObject::connect(demoTimer, &QTimer::timeout, this, &ModbusController::demoTimerSlot);
+    }
+    demoTimer->start();
+    qInfo() << "DEMO: simulated PLC enabled (no hardware, no real payments)";
+}
+
+bool ModbusController::isDemo() const
+{
+    return demoMode_;
+}
+
+void ModbusController::demoTimerSlot()
+{
+    if (!demoMode_ || !modbusDevice)
+        return;
+
+    // контроллер отвечает на пинг
+    modbusDevice->setData(QModbusDataUnit::HoldingRegisters, REG_PING, 1);
+
+    quint16 t = 0;
+    modbusDevice->data(QModbusDataUnit::HoldingRegisters, REG_TIME, &t);
+    if (!t)
+        return;
+
+    int min = t >> 8;
+    int sec = t & 0xFF;
+    if (sec > 0)
+        --sec;
+    else if (min > 0) {
+        --min;
+        sec = 59;
+    } else {
+        min = 0;
+        sec = 0;
+    }
+    modbusDevice->setData(QModbusDataUnit::HoldingRegisters, REG_TIME,
+        quint16((min << 8) | sec));
+
+    // баланс тает вместе со временем мойки
+    quint16 b = 0;
+    modbusDevice->data(QModbusDataUnit::HoldingRegisters, REG_BALANCE, &b);
+    if (b > 0)
+        modbusDevice->setData(QModbusDataUnit::HoldingRegisters, REG_BALANCE, quint16(b - 1));
+}
+
+void ModbusController::demoStartSession(quint16 minutes, quint16 balance)
+{
+    if (!demoMode_ || !modbusDevice)
+        return;
+
+    demoBalance_ = balance;
+    modbusDevice->setData(QModbusDataUnit::HoldingRegisters, REG_BALANCE, balance);
+    modbusDevice->setData(QModbusDataUnit::HoldingRegisters, REG_TIME, quint16(minutes << 8));
+    modbusDevice->setData(QModbusDataUnit::HoldingRegisters, REG_PAUSE_TIME, 0);
+    modbusDevice->setData(QModbusDataUnit::HoldingRegisters, REG_CMD1_TPANEL, 0x80);
+    qInfo() << "DEMO: wash session started," << minutes << "min, balance" << balance;
+}
+
+void ModbusController::demoAddBalance(quint16 value)
+{
+    if (!demoMode_ || !modbusDevice)
+        return;
+
+    quint16 b = 0;
+    modbusDevice->data(QModbusDataUnit::HoldingRegisters, REG_BALANCE, &b);
+    modbusDevice->setData(QModbusDataUnit::HoldingRegisters, REG_BALANCE, quint16(b + value));
 }

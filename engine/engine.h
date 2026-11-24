@@ -51,8 +51,15 @@ public:
     // true, если контроллер мойки (ПЛК) не отвечает: терминал работает без оборудования,
     // оплата блокируется, в интерфейсе показывается предупреждение.
     Q_PROPERTY(bool plcOffline READ plcOffline NOTIFY plcOfflineChanged)
+    // true, если контроллер симулируется (нет COM-порта): все экраны доступны,
+    // но реальные списания денег отключены.
+    Q_PROPERTY(bool demoMode READ demoMode NOTIFY demoModeChanged)
 
     Q_INVOKABLE void submitIdCode(const QString& code);
+
+    // Демо-пополнение и запуск мойки (симуляция, без YooKassa/ПЛК)
+    Q_INVOKABLE void demoPay(int value);
+    Q_INVOKABLE void demoStartWash();
 
     // Оплата из заставки ожидания: без связи с контроллером не пускаем в оплату,
     // иначе клиент заплатит, а мойка не запустится.
@@ -94,6 +101,10 @@ public:
             emit showSessionMessage(true, QString::fromUtf8("Нет связи с оборудованием мойки."));
             return;
         }
+        if (demoMode_) {
+            emit showSessionMessage(false, QString::fromUtf8("ДЕМО: ворота открыты (симуляция)."));
+            return;
+        }
         gateHold = true;
         gateTimer.start();
     }
@@ -119,6 +130,7 @@ public:
     QString idCode() const;
     bool isBlocked() const;
     bool plcOffline() const;
+    bool demoMode() const;
     QString appVersion() const;
     QString cleanerRate() const;
     QString dryingRate() const;
@@ -143,6 +155,7 @@ signals:
     void showRegister();
     void showPSection();
     void plcOfflineChanged();
+    void demoModeChanged();
     void tryLogin(QString phone, QString passwd);
     void tryRegister(QString phone, QString passwd);
 
@@ -242,6 +255,8 @@ private:
     bool m_isBlocked = false;
     // ПЛК недоступен: заставка инициализации не должна висеть вечно.
     bool offlineMode_ = false;
+    // Симуляция ПЛК для тестирования интерфейса без оборудования.
+    bool demoMode_ = false;
     // Экран ошибки показываем один раз, а не каждые 10 мс.
     bool errorPageShown_ = false;
     int blockCheckCounter_ = 0;

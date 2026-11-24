@@ -134,7 +134,7 @@ ApplicationWindow {
                 p_session.resetButtons()
             }
 
-            if (p_initialization.visible) {
+            if (p_initialization.visible && backend.hasIdCode) {
                 changePage(Constants.session)
             }
         }

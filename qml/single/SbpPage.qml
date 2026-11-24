@@ -136,10 +136,15 @@ Item {
                         Layout.preferredWidth: 400
                         Layout.preferredHeight: 100
                         prog_name.font.pointSize: 36
-                        onButtonClicked: handler.createPayment(
-                                             currentAmount.toFixed(2),
-                                             "Платёж на " + currentAmount.toFixed(
-                                                 0))
+                        onButtonClicked: {
+                            if (backend.demoMode) {
+                                backend.demoPay(currentAmount)
+                            } else {
+                                handler.createPayment(
+                                    currentAmount.toFixed(2),
+                                    "Платёж на " + currentAmount.toFixed(0))
+                            }
+                        }
                     }
                 }
             }

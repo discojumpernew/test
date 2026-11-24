@@ -273,8 +273,8 @@ void Engine::initEvent()
     if (error)
         qWarning() << "modbus create failed:" << error;
 
-    // Порта нет в системе (нет адаптера/ПЛК, запуск в виртуалке) — открывать
-    // нечего, сразу работаем без контроллера, чтобы не висеть на заставке.
+    // Порта нет в системе (тест на ПК/Parallels): вместо реального ПЛК
+    // включаем симуляцию — весь интерфейс работает, но оплата не списывает деньги.
     bool portExists = false;
     for (const QString& p : ports) {
         if (p.compare(modbus_config.PortName, Qt::CaseInsensitive) == 0) {
@@ -284,10 +284,12 @@ void Engine::initEvent()
     }
 
     if (!portExists) {
-        qWarning() << "modbus port" << modbus_config.PortName << "is not present in the system";
-        error = Errors::MCConnectionLost;
+        qWarning() << "modbus port" << modbus_config.PortName << "is not present — DEMO mode";
+        error = Errors::No;
+        modbusController->enableDemo();
+        demoMode_ = true;
+        emit demoModeChanged();
         timer->start();
-        enterOfflineMode();
         return;
     }
 
@@ -597,7 +599,10 @@ int Engine::stateTransition(int state, ModbusController::s_status status)
     switch (state) {
     case States::Waiting:
         emit showWaiting(true);
-        emit showSession(0);
+        // без ID кода остаёмся на экране активации, иначе state machine
+        // перекроет его рабочим экраном через ~0.5 с после старта
+        if (hasIdCode_)
+            emit showSession(0);
         break;
     case States::Session:
         error = sessionTransition();
@@ -1010,6 +1015,11 @@ bool Engine::plcOffline() const
     return offlineMode_;
 }
 
+bool Engine::demoMode() const
+{
+    return demoMode_;
+}
+
 void Engine::requestPayment()
 {
     if (offlineMode_) {
@@ -1018,7 +1028,40 @@ void Engine::requestPayment()
         return;
     }
 
+    // в демо-режиме экраны оплаты доступны для просмотра,
+    // но сама транзакция перехватывается demoPay()
     emit showPSection();
+}
+
+void Engine::demoPay(int value)
+{
+    if (!demoMode_)
+        return;
+
+    newBalance = balance() + value;
+    add_balance = true;
+    modbusController->demoStartSession(3, quint16(newBalance));
+
+    emit showSessionMessage(false, QString::fromUtf8(
+        "ДЕМО: баланс пополнен на %1 ₽ (деньги не списывались)").arg(value));
+    emit showSession(0);
+}
+
+void Engine::demoStartWash()
+{
+    if (!demoMode_)
+        return;
+
+    quint16 b = quint16(balance());
+    if (b < 100)
+        b = 100;
+    newBalance = b;
+    add_balance = true;
+    modbusController->demoStartSession(3, b);
+
+    emit showSessionMessage(false, QString::fromUtf8(
+        "ДЕМО: мойка запущена на 3 минуты"));
+    emit showSession(0);
 }
 
 QString Engine::appVersion() const

@@ -1009,19 +1009,74 @@ Rectangle {
             opacity: 0.94
         }
 
-        // Предупреждение, когда контроллер мойки недоступен: терминал живой,
-        // но оплату принимать нельзя.
-        Text {
-            id: offlineWarn
-            visible: backend.plcOffline
+        // Верхняя панель статуса: демо-режим или отсутствие контроллера.
+        Rectangle {
+            id: statusBar
+            z: 2
+            visible: backend.demoMode || backend.plcOffline
             anchors.top: parent.top
-            anchors.topMargin: 28
-            anchors.horizontalCenter: parent.horizontalCenter
-            text: "НЕТ СВЯЗИ С ОБОРУДОВАНИЕМ"
-            color: "#ff4040"
-            font.family: myFont.name
-            font.pixelSize: themeItem.fontSize + 6
-            font.bold: true
+            anchors.left: parent.left
+            anchors.right: parent.right
+            height: 110
+            color: Qt.rgba(0, 0, 0, 0.78)
+
+            Text {
+                id: offlineWarn
+                anchors.left: parent.left
+                anchors.leftMargin: 30
+                anchors.verticalCenter: parent.verticalCenter
+                text: backend.demoMode
+                      ? "ДЕМО-РЕЖИМ · КОНТРОЛЛЕР СИМУЛИРУЕТСЯ · ДЕНЬГИ НЕ СПИСЫВАЮТСЯ"
+                      : "НЕТ СВЯЗИ С ОБОРУДОВАНИЕМ"
+                color: backend.demoMode ? "#ffc107" : "#ff4040"
+                font.family: myFont.name
+                font.pixelSize: themeItem.fontSize
+                font.bold: true
+            }
+
+            Row {
+                visible: backend.demoMode
+                anchors.right: parent.right
+                anchors.rightMargin: 30
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 16
+
+                Rectangle {
+                    width: 230
+                    height: 72
+                    radius: 8
+                    color: "#1f6feb"
+                    Text {
+                        anchors.centerIn: parent
+                        text: "ДЕМО +100 ₽"
+                        color: "white"
+                        font.pixelSize: 26
+                        font.bold: true
+                    }
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: backend.demoPay(100)
+                    }
+                }
+
+                Rectangle {
+                    width: 300
+                    height: 72
+                    radius: 8
+                    color: "#2e7d32"
+                    Text {
+                        anchors.centerIn: parent
+                        text: "ДЕМО: НАЧАТЬ МОЙКУ"
+                        color: "white"
+                        font.pixelSize: 26
+                        font.bold: true
+                    }
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: backend.demoStartWash()
+                    }
+                }
+            }
         }
 
         Column {

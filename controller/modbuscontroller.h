@@ -72,6 +72,13 @@ public:
 
     int writeNewBalance(quint16 value);
 
+    // Демо-режим: ПЛК симулируется в памяти (регистры QModbusServer),
+    // чтобы терминал можно было посмотреть на ПК без мойки и без реальных оплат.
+    void enableDemo();
+    bool isDemo() const;
+    void demoStartSession(quint16 minutes, quint16 balance);
+    void demoAddBalance(quint16 value);
+
 signals:
 
 private:
@@ -97,8 +104,13 @@ private:
     s_error error;
     s_config config;
 
+    bool demoMode_ = false;
+    quint16 demoBalance_ = 0;
+    QTimer* demoTimer = nullptr;
+
 private slots:
     void controlMsgTimerSlot();
+    void demoTimerSlot();
     void DebugDataWriten(QModbusDataUnit::RegisterType table, int address, int size);
 };
 
