@@ -42,6 +42,9 @@ bool db::DBWorker::TryOpenRemote()
         remoteDB_.setDatabaseName(db::dbName);
         remoteDB_.setUserName(db::user);
         remoteDB_.setPassword(db::password);
+        // Connector/C 3.4 по умолчанию проверяет сертификат сервера — у MySQL 8 он
+        // самоподписанный. Отключаем проверку, оставляя само TLS-шифрование.
+        remoteDB_.setConnectOptions("MYSQL_OPT_SSL_VERIFY_SERVER_CERT=0;MYSQL_OPT_CONNECT_TIMEOUT=10");
         if (!remoteDB_.open()) {
             qWarning() << "Failed to open server MySQL DB:" << remoteDB_.lastError()
                        << "| host:" << db::host << "db:" << db::dbName << "user:" << db::user;

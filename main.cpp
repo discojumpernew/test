@@ -98,6 +98,12 @@ int main(int argc, char* argv[])
 
     QString appdir = QGuiApplication::applicationDirPath();
 
+    // MariaDB Connector/C 3.4 включает TLS и проверку сертификата сервера ПО УМОЛЧАНИЮ.
+    // У MySQL 8 сертификат самоподписанный -> Windows/Schannel отвергает его
+    // (CERT_E_UNTRUSTEDROOT). Отключаем только проверку цепочки, само шифрование остаётся.
+    qputenv("MARIADB_TLS_DISABLE_PEER_VERIFICATION", QByteArray("1"));
+    qInfo() << "MARIADB_TLS_DISABLE_PEER_VERIFICATION:" << qgetenv("MARIADB_TLS_DISABLE_PEER_VERIFICATION");
+
     // MySQL 8 по умолчанию использует caching_sha2_password. В MariaDB Connector/C
     // это отдельный плагин (caching_sha2_password.dll), а не встроенный алгоритм,
     // поэтому явно указываем коннектору папку с плагинами рядом с exe.
