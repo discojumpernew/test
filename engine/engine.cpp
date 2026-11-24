@@ -552,6 +552,18 @@ void Engine::tEvent()
         status = modbusController->readStatus();
         error = 0;
         if ((state == States::Initialization) && !status.pingerror) {
+            // Пост не активирован ID кодом — экран ввода кода важнее заставки.
+            // Раньше здесь безусловно уходил showInitialization(1), и он
+            // перекрывал экран активации через ~10 мс после старта.
+            if (!hasIdCode_) {
+                initTimer->stop();
+                elapsedTimer->invalidate();
+                state = States::Waiting;
+                emit showIdSetup();
+                last_status_raw = status.raw;
+                return;
+            }
+
             if (!elapsedTimer->isValid()) {
                 emit showInitialization(1);
                 elapsedTimer->start();
@@ -603,6 +615,8 @@ int Engine::stateTransition(int state, ModbusController::s_status status)
         // перекроет его рабочим экраном через ~0.5 с после старта
         if (hasIdCode_)
             emit showSession(0);
+        else
+            emit showIdSetup();
         break;
     case States::Session:
         error = sessionTransition();
