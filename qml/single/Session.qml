@@ -9,7 +9,8 @@ SessionForm {
     readonly property int cbtn3_msk: 0x4
     readonly property int cbtn4_msk: 0x8
     readonly property int cbtn5_msk: 0xC
-    readonly property int cbtn6_msk: 0x10
+    // ПЕНА РОЗОВАЯ = программа 7 ПР200: выбор — бит 15 рег.0, подтверждение — бит 15 рег.1 (ChTreid/ПР200)
+    readonly property int cbtn6_msk: 0x8000
     readonly property int cbtn7_msk: 0x20
     readonly property int cbtn8_msk: 0x40
     readonly property int cbtn9_msk: 0x100

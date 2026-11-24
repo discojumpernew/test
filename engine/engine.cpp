@@ -436,8 +436,9 @@ int Engine::waitingEvent()
     if (m_isBlocked)
         return modbusController->writeButtons(0x80); // пауза: пост заблокирован дистанционно
 
-    // Ворота: держим бит 13 (0x2000) ~1.5 с после нажатия кнопки на заставке
-    if (gateHold && gateTimer.elapsed() > 1500)
+    // Ворота: держим бит 13 (0x2000) ~1 с после нажатия кнопки на заставке.
+    // ПР200 открывает ворота по переднему фронту и сам формирует импульс DO8 1 с.
+    if (gateHold && gateTimer.elapsed() > 1000)
         gateHold = false;
 
     error = modbusController->writeButtons(128 | BalanceRoutine() | (gateHold ? 0x2000 : 0x0000));
@@ -462,8 +463,9 @@ int Engine::sessionEvent()
     if (pbuttons & 0x80)
         setPauseTime(QString::number(session.pause_minute).rightJustified(2, '0') + ":" + QString::number(session.pause_seconds).rightJustified(2, '0'));
 
-    // Ворота: держим бит 13 (0x2000) ~1.5 с после нажатия кнопки на заставке
-    if (gateHold && gateTimer.elapsed() > 1500)
+    // Ворота: держим бит 13 (0x2000) ~1 с после нажатия кнопки на заставке.
+    // ПР200 открывает ворота по переднему фронту и сам формирует импульс DO8 1 с.
+    if (gateHold && gateTimer.elapsed() > 1000)
         gateHold = false;
     const quint16 gateBit = (gateHold ? 0x2000 : 0x0000);
 
