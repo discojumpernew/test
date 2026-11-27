@@ -34,6 +34,7 @@ Item {
         ProgramButton {
             id: price_list_back
             text: "Назад"
+            centerText: true
             width: 370
             height: 100
             anchors.top: parent.top

@@ -65,6 +65,7 @@ Item {
                         ProgramButton {
                             id: spb_back_btn
                             text: "Назад"
+                            centerText: true
                             width: 240
                             height: 100
                             prog_name.font.pointSize: 38

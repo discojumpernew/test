@@ -117,6 +117,7 @@ Item {
         ProgramButton {
             id: admin_back_btn
             text: "ВЫЙТИ"
+            centerText: true
             width: 300
             height: 100
             anchors.top: parent.top
@@ -613,6 +614,7 @@ Item {
         ProgramButton {
             id: saveBtn
             text: "СОХРАНИТЬ"
+            centerText: true
             anchors.bottom: parent.bottom
             anchors.left: parent.left
             anchors.right: parent.right

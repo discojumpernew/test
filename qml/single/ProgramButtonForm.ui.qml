@@ -22,6 +22,9 @@ Item {
     property string iconSource: ""
     property real iconSize: 0.6
     property int iconOffsetY: -10
+    // true — подпись по центру кнопки (для служебных кнопок: ВЫЙТИ, СОХРАНИТЬ и т.п.),
+    // false (по умолчанию) — подпись внизу, как на кнопках программ мойки
+    property bool centerText: false
 
     property color topColor: checked ? themeItem.buttonActiveTop : themeItem.buttonTopColor
     property color bottomColor: checked ? themeItem.buttonActiveBottom : themeItem.buttonBottomColor
@@ -76,12 +79,14 @@ Item {
         text: ""
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.bottom: parent.bottom
         anchors.leftMargin: 8
         anchors.rightMargin: 8
+        anchors.topMargin: 8
         anchors.bottomMargin: 8
+        anchors.top: centerText ? parent.top : undefined
+        anchors.bottom: centerText ? undefined : parent.bottom
         horizontalAlignment: Text.AlignHCenter
-        verticalAlignment: Text.AlignBottom
+        verticalAlignment: centerText ? Text.AlignVCenter : Text.AlignBottom
         color: textColor
         font.pointSize: themeItem.fontSize
         minimumPointSize: themeItem.fontSizeSmall
@@ -97,12 +102,14 @@ Item {
         text: prog_name.text
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.bottom: parent.bottom
         anchors.leftMargin: 8
         anchors.rightMargin: 8
+        anchors.topMargin: 8
         anchors.bottomMargin: 8
+        anchors.top: centerText ? parent.top : undefined
+        anchors.bottom: centerText ? undefined : parent.bottom
         horizontalAlignment: Text.AlignHCenter
-        verticalAlignment: Text.AlignBottom
+        verticalAlignment: centerText ? Text.AlignVCenter : Text.AlignBottom
         color: textColor
         font.pointSize: themeItem.fontSize
         minimumPointSize: themeItem.fontSizeSmall

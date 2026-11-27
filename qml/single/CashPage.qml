@@ -78,6 +78,7 @@ Item {
         ProgramButton {
             id: cash_back_btn
             text: "Назад"
+            centerText: true
             width: 240
             height: 100
             anchors.top: parent.top

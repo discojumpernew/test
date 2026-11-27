@@ -23,6 +23,7 @@ Item {
         ProgramButton {
             id: psection_back_btn
             text: "Назад"
+            centerText: true
             width: 240
             height: 100
             anchors.top: parent.top
@@ -80,6 +81,7 @@ Item {
                     width: payCol.btnWidth(payCol.rowBtnCount)
                     height: 300
                     text: "Наличные"
+                    centerText: true
                     prog_name.font.pointSize: 48
 
                     onButtonClicked: {
@@ -120,6 +122,7 @@ Item {
                 height: 300
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: "Картой"
+                centerText: true
                 prog_name.font.pointSize: 48
 
                 onButtonClicked: {
