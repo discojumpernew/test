@@ -13,8 +13,11 @@ SessionForm {
     readonly property int cbtn6_msk: 0x8000
     readonly property int cbtn7_msk: 0x20
     readonly property int cbtn8_msk: 0x40
-    readonly property int cbtn9_msk: 0x100
-    readonly property int cbtn10_msk: 0x200
+    // Биты 8/9 рег.0 зарезервированы протоколом ChTreid/ПР200 под служебные
+    // команды баланса: бит8 = зачислить баланс, бит9 = СБРОСИТЬ баланс.
+    // Кнопки пересажены на свободные биты 10/11, иначе ВОСК обнулял баланс.
+    readonly property int cbtn9_msk: 0x400   // АКТИВНАЯ ХИМИЯ — бит 10 рег.0
+    readonly property int cbtn10_msk: 0x800  // ВОСК — бит 11 рег.0
     readonly property int cbtn_pause_msk: 0x80
     signal resetButtons
 
