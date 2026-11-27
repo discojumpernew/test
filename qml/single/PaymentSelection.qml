@@ -42,6 +42,22 @@ Item {
             spacing: 30
             width: parent.width * 9 / 10
 
+            // Админ-настройки: видимость способов оплаты. Если выключены все —
+            // показываем все три (защита от пустого экрана).
+            readonly property bool cashOn: backend.payCash
+            readonly property bool sbpOn: backend.paySbp
+            readonly property bool cardOn: backend.payCard
+            readonly property int payOnCount: (cashOn ? 1 : 0) + (sbpOn ? 1 : 0) + (cardOn ? 1 : 0)
+            readonly property bool showAll: payOnCount === 0
+            readonly property bool cashVisible: showAll || cashOn
+            readonly property bool sbpVisible: showAll || sbpOn
+            readonly property bool cardVisible: showAll || cardOn
+            readonly property int rowBtnCount: (cashVisible ? 1 : 0) + (sbpVisible ? 1 : 0)
+
+            function btnWidth(visibleCount) {
+                return visibleCount > 0 ? (payCol.width - 80 * (visibleCount - 1)) / visibleCount : 0
+            }
+
             // Заголовок
             Text {
                 text: "Выберите способ оплаты"
@@ -60,7 +76,8 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
 
                 ProgramButton {
-                    width: (parent.width - 80) / 2
+                    visible: payCol.cashVisible
+                    width: payCol.btnWidth(payCol.rowBtnCount)
                     height: 300
                     text: "Наличные"
                     prog_name.font.pointSize: 48
@@ -71,7 +88,8 @@ Item {
                 }
 
                 ProgramButton {
-                    width: (parent.width - 80) / 2
+                    visible: payCol.sbpVisible
+                    width: payCol.btnWidth(payCol.rowBtnCount)
                     height: 300
                     text: ""
 
@@ -97,7 +115,8 @@ Item {
 
             // Нижняя кнопка: карта
             ProgramButton {
-                width: (parent.width - 80) / 2
+                visible: payCol.cardVisible
+                width: payCol.btnWidth(payCol.rowBtnCount + (payCol.cardVisible ? 1 : 0))
                 height: 300
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: "Картой"

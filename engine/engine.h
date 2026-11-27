@@ -65,13 +65,34 @@ public:
     // иначе клиент заплатит, а мойка не запустится.
     Q_INVOKABLE void requestPayment();
 
-    Q_PROPERTY(QString cleanerRate READ cleanerRate NOTIFY cleanerRateChanged)
-    Q_PROPERTY(QString dryingRate READ dryingRate NOTIFY dryingRateChanged)
-    Q_PROPERTY(QString waterRate READ waterRate NOTIFY waterRateChanged)
-    Q_PROPERTY(QString chemistryRate READ chemistryRate NOTIFY chemistryRateChanged)
-    Q_PROPERTY(QString foamRate READ foamRate NOTIFY foamRateChanged)
-    Q_PROPERTY(QString waxRate READ waxRate NOTIFY waxRateChanged)
-    Q_PROPERTY(QString pauseRate READ pauseRate NOTIFY pauseRateChanged)
+    Q_PROPERTY(QString cleanerRate READ cleanerRate WRITE setCleanerRate NOTIFY cleanerRateChanged)
+    Q_PROPERTY(QString dryingRate READ dryingRate WRITE setDryingRate NOTIFY dryingRateChanged)
+    Q_PROPERTY(QString waterRate READ waterRate WRITE setWaterRate NOTIFY waterRateChanged)
+    Q_PROPERTY(QString chemistryRate READ chemistryRate WRITE setChemistryRate NOTIFY chemistryRateChanged)
+    Q_PROPERTY(QString foamRate READ foamRate WRITE setFoamRate NOTIFY foamRateChanged)
+    Q_PROPERTY(QString waxRate READ waxRate WRITE setWaxRate NOTIFY waxRateChanged)
+    Q_PROPERTY(QString pauseRate READ pauseRate WRITE setPauseRate NOTIFY pauseRateChanged)
+
+    // === Админ-панель: дизайн и конфигурация программ/платежей ===
+    // Дизайн интерфейса: "classic" (старый) | "duck" (новый, с уткой)
+    Q_PROPERTY(QString designTheme READ designTheme WRITE setDesignTheme NOTIFY designThemeChanged)
+    // Видимость программ на экране сессии
+    Q_PROPERTY(bool progTurbo READ progTurbo WRITE setProgTurbo NOTIFY progTurboChanged)
+    Q_PROPERTY(bool progVacuum READ progVacuum WRITE setProgVacuum NOTIFY progVacuumChanged)
+    Q_PROPERTY(bool progChemistry READ progChemistry WRITE setProgChemistry NOTIFY progChemistryChanged)
+    Q_PROPERTY(bool progWax READ progWax WRITE setProgWax NOTIFY progWaxChanged)
+    Q_PROPERTY(bool progFoamPink READ progFoamPink WRITE setProgFoamPink NOTIFY progFoamPinkChanged)
+    Q_PROPERTY(bool progFoamYellow READ progFoamYellow WRITE setProgFoamYellow NOTIFY progFoamYellowChanged)
+    Q_PROPERTY(bool progFoamWhite READ progFoamWhite WRITE setProgFoamWhite NOTIFY progFoamWhiteChanged)
+    // Способы оплаты
+    Q_PROPERTY(bool payCash READ payCash WRITE setPayCash NOTIFY payCashChanged)
+    Q_PROPERTY(bool paySbp READ paySbp WRITE setPaySbp NOTIFY paySbpChanged)
+    Q_PROPERTY(bool payCard READ payCard WRITE setPayCard NOTIFY payCardChanged)
+
+    // Админ-панель: сохранить настройки в БД (применяются сразу и сохраняются)
+    Q_INVOKABLE void adminSaveSettings(const QVariantMap& settings);
+    // Перезагрузить настройки из БД (например, при открытии панели)
+    Q_INVOKABLE void adminReloadSettings();
 
     Q_INVOKABLE void cancelLoading()
     {
@@ -140,6 +161,18 @@ public:
     QString waxRate() const;
     QString pauseRate() const;
 
+    QString designTheme() const;
+    bool progTurbo() const;
+    bool progVacuum() const;
+    bool progChemistry() const;
+    bool progWax() const;
+    bool progFoamPink() const;
+    bool progFoamYellow() const;
+    bool progFoamWhite() const;
+    bool payCash() const;
+    bool paySbp() const;
+    bool payCard() const;
+
 signals:
     void loadingShown();
     void loadingHidden();
@@ -171,6 +204,20 @@ signals:
     void foamRateChanged();
     void waxRateChanged();
     void pauseRateChanged();
+
+    void designThemeChanged();
+    void progTurboChanged();
+    void progVacuumChanged();
+    void progChemistryChanged();
+    void progWaxChanged();
+    void progFoamPinkChanged();
+    void progFoamYellowChanged();
+    void progFoamWhiteChanged();
+    void payCashChanged();
+    void paySbpChanged();
+    void payCardChanged();
+    void adminSettingsSaved(bool ok);
+    void showAdmin();
 
     void successPay(int value);
     void logout();
@@ -221,6 +268,28 @@ public slots:
     void OnGetUserHistoryResultDB(quint64, db::QueryStatus, QVector<db::historyElem>);
     void OnValidateIdCodeResultDB(quint64, db::QueryStatus, bool blocked);
     void OnBlockStatusResultDB(quint64, bool blocked);
+    void OnTerminalSettingsResultDB(quint64, QVariantMap);
+    void OnTerminalSettingsSavedDB(quint64, bool ok);
+
+    // === Setters для свойств админ-настроек ===
+    void setCleanerRate(QString v);
+    void setDryingRate(QString v);
+    void setWaterRate(QString v);
+    void setChemistryRate(QString v);
+    void setFoamRate(QString v);
+    void setWaxRate(QString v);
+    void setPauseRate(QString v);
+    void setDesignTheme(QString v);
+    void setProgTurbo(bool v);
+    void setProgVacuum(bool v);
+    void setProgChemistry(bool v);
+    void setProgWax(bool v);
+    void setProgFoamPink(bool v);
+    void setProgFoamYellow(bool v);
+    void setProgFoamWhite(bool v);
+    void setPayCash(bool v);
+    void setPaySbp(bool v);
+    void setPayCard(bool v);
 
 private:
     void OnTryLogin(QString phone, QString passwd);
@@ -314,6 +383,19 @@ private:
     QString m_foamRate { "" };
     QString m_waxRate { "" };
     QString m_pauseRate { "" };
+
+    // Админ-настройки (грузятся из terminal_settings, дефолты — classic/всё включено)
+    QString m_designTheme { "classic" };
+    bool m_progTurbo { true };
+    bool m_progVacuum { true };
+    bool m_progChemistry { true };
+    bool m_progWax { true };
+    bool m_progFoamPink { true };
+    bool m_progFoamYellow { true };
+    bool m_progFoamWhite { true };
+    bool m_payCash { true };
+    bool m_paySbp { true };
+    bool m_payCard { true };
 
     void errorEvent();
     int sessionEvent();

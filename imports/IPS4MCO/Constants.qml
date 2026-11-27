@@ -24,4 +24,5 @@ QtObject {
     readonly property int card: 11
     readonly property int idsetup: 12
     readonly property int blocked: 13
+    readonly property int admin: 14
 }

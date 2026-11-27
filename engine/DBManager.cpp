@@ -23,6 +23,8 @@ db::DBManager::DBManager(QObject* parent)
     connect(worker_, &DBWorker::GetUserHistoryResult, this, &DBManager::GetUserHistoryResult, Qt::QueuedConnection);
     connect(worker_, &DBWorker::ValidateIdCodeResult, this, &DBManager::ValidateIdCodeResult, Qt::QueuedConnection);
     connect(worker_, &DBWorker::BlockStatusResult, this, &DBManager::BlockStatusResult, Qt::QueuedConnection);
+    connect(worker_, &DBWorker::TerminalSettingsResult, this, &DBManager::TerminalSettingsResult, Qt::QueuedConnection);
+    connect(worker_, &DBWorker::TerminalSettingsSaved, this, &DBManager::TerminalSettingsSaved, Qt::QueuedConnection);
 
     connect(&workerThread_, &QThread::started, worker_, &DBWorker::processLoop);
     workerThread_.start();
@@ -132,6 +134,28 @@ void db::DBManager::CheckBlockStatus(quint64 requestId, QString code)
     task.requestId = requestId;
     task.action = [this, requestId, code] {
         worker_->CheckBlockStatus(requestId, code);
+    };
+
+    worker_->queue.push(task);
+}
+
+void db::DBManager::LoadTerminalSettings(quint64 requestId)
+{
+    Task task;
+    task.requestId = requestId;
+    task.action = [this, requestId] {
+        worker_->LoadTerminalSettings(requestId);
+    };
+
+    worker_->queue.push(task);
+}
+
+void db::DBManager::SaveTerminalSettings(quint64 requestId, QVariantMap settings)
+{
+    Task task;
+    task.requestId = requestId;
+    task.action = [this, requestId, settings] {
+        worker_->SaveTerminalSettings(requestId, settings);
     };
 
     worker_->queue.push(task);

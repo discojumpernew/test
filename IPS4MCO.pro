@@ -3,7 +3,7 @@ QT += qml quick serialport serialbus multimedia multimediawidgets sql virtualkey
 CONFIG += c++17
 
 # Версия приложения (для OTA-обновления)
-APPVERSION = 1.2.13
+APPVERSION = 1.2.14
 DEFINES += APP_VERSION=\\\"$${APPVERSION}\\\"
 
 RC_ICONS = icon.ico
@@ -98,6 +98,7 @@ DISTFILES += \
     qml/single/ProgramButtonForm.ui.qml \
     qml/single/RegisterPage.qml \
     qml/single/SbpPage.qml \
+    qml/single/AdminPage.qml \
     qml/single/Session.qml \
     qml/single/SessionForm.ui.qml \
     qml/single/Theme.qml

@@ -37,6 +37,19 @@ Rectangle {
     property alias gates_btn: gates_btn
     property bool isWaiting: false
 
+    // Админ-настройки: какие программы показывать. Скрытые кнопки убираются,
+    // оставшиеся растягиваются на весь ряд.
+    readonly property int foamBtnCount: (backend.progFoamPink ? 1 : 0)
+                                        + (backend.progFoamYellow ? 1 : 0)
+                                        + (backend.progFoamWhite ? 1 : 0)
+    readonly property int chemBtnCount: (backend.progChemistry ? 1 : 0)
+                                        + (backend.progWax ? 1 : 0)
+                                        + (backend.progTurbo ? 1 : 0)
+                                        + (backend.progVacuum ? 1 : 0)
+    function rowWidth(count, parentWidth) {
+        return count > 0 ? (parentWidth - 20 * (count - 1)) / count : 0
+    }
+
     FontLoader {
         id: myFont
         source: "qrc:/fonts/TerminatorGenisys.ttf"
@@ -97,6 +110,17 @@ Rectangle {
             anchors.verticalCenter: parent.verticalCenter
             anchors.horizontalCenter: parent.horizontalCenter
             spacing: 24
+
+            // Утка — видна только в дизайне "с уткой"
+            Image {
+                id: duckLogo
+                visible: themeItem.isDuck
+                source: "qrc:duckIcon"
+                height: parent.height - 16
+                width: height
+                anchors.verticalCenter: parent.verticalCenter
+                fillMode: Image.PreserveAspectFit
+            }
 
             Text {
                 id: logo
@@ -615,7 +639,8 @@ Rectangle {
         ProgramButton {
             id: btn6
             darkTheme: container.darkTheme
-            width: (parent.width - 40) / 3
+            visible: backend.progFoamPink
+            width: container.rowWidth(container.foamBtnCount, parent.width)
             height: parent.height
             iconSource: "qrc:foamPinkIcon"
             iconSize: 0.65
@@ -643,7 +668,8 @@ Rectangle {
         ProgramButton {
             id: btn7
             darkTheme: container.darkTheme
-            width: (parent.width - 40) / 3
+            visible: backend.progFoamYellow
+            width: container.rowWidth(container.foamBtnCount, parent.width)
             height: parent.height
             text: ""
             iconSource: "qrc:foamYellowIcon"
@@ -671,7 +697,8 @@ Rectangle {
         ProgramButton {
             id: btn8
             darkTheme: container.darkTheme
-            width: (parent.width - 40) / 3
+            visible: backend.progFoamWhite
+            width: container.rowWidth(container.foamBtnCount, parent.width)
             height: parent.height
             iconSource: "qrc:foamWhiteIcon"
             text: ""
@@ -709,7 +736,8 @@ Rectangle {
         ProgramButton {
             id: btn9
             darkTheme: container.darkTheme
-            width: (parent.width - 60) / 4
+            visible: backend.progChemistry
+            width: container.rowWidth(container.chemBtnCount, parent.width)
             height: parent.height
             iconSource: "qrc:chemistryIcon"
             iconSize: 0.6
@@ -737,7 +765,8 @@ Rectangle {
         ProgramButton {
             id: btn10
             darkTheme: container.darkTheme
-            width: (parent.width - 60) / 4
+            visible: backend.progWax
+            width: container.rowWidth(container.chemBtnCount, parent.width)
             height: parent.height
             iconSource: "qrc:waxIcon"
             iconSize: 0.6
@@ -765,7 +794,8 @@ Rectangle {
         ProgramButton {
             id: btn1
             darkTheme: container.darkTheme
-            width: (parent.width - 60) / 4
+            visible: backend.progTurbo
+            width: container.rowWidth(container.chemBtnCount, parent.width)
             height: parent.height
             iconSource: "qrc:turboIcon"
             iconSize: 0.6
@@ -793,7 +823,8 @@ Rectangle {
         ProgramButton {
             id: btn2
             darkTheme: container.darkTheme
-            width: (parent.width - 60) / 4
+            visible: backend.progVacuum
+            width: container.rowWidth(container.chemBtnCount, parent.width)
             height: parent.height
             iconSource: "qrc:vacuumIcon"
             iconSize: 0.6

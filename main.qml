@@ -42,7 +42,7 @@ ApplicationWindow {
 
     function changePage(page) {
         Qt.inputMethod.hide()
-        var visible_page = [false, false, false, false, false, false, false, false, false, false, false, false, false, false]
+        var visible_page = [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false]
         visible_page[page] = true
 
         p_initialization.visible = visible_page[0]
@@ -59,6 +59,7 @@ ApplicationWindow {
         p_card.visible = visible_page[11]
         p_idsetup.visible = visible_page[12]
         p_blocked.visible = visible_page[13]
+        p_admin.visible = visible_page[14]
     }
 
     Connections {
@@ -162,6 +163,11 @@ ApplicationWindow {
             } else if (p_blocked.visible) {
                 changePage(Constants.session)
             }
+        }
+
+        function onShowAdmin() {
+            p_admin.refreshFromBackend()
+            changePage(Constants.admin)
         }
     }
 
@@ -274,6 +280,12 @@ ApplicationWindow {
 
     BlockedPage {
         id: p_blocked
+        visible: false
+        darkTheme: window.darkTheme
+    }
+
+    AdminPage {
+        id: p_admin
         visible: false
         darkTheme: window.darkTheme
     }

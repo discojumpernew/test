@@ -21,7 +21,8 @@ enum class QueryStatus {
     Success,
     NotFound,
     Duplicate,
-    DbError
+    DbError,
+    AdminSuccess
 };
 
 struct UserData {
@@ -83,6 +84,9 @@ public:
     void CheckBlockStatus(quint64 requestId, QString code);
     void EnsureRemoteSchema();
 
+    void LoadTerminalSettings(quint64 requestId);
+    void SaveTerminalSettings(quint64 requestId, QVariantMap settings);
+
 signals:
     void TryLoginResult(quint64, QueryStatus, std::optional<UserData>);
     void AddUserResult(quint64, QueryStatus);
@@ -90,6 +94,8 @@ signals:
     void GetUserHistoryResult(quint64, QueryStatus, QVector<historyElem>);
     void ValidateIdCodeResult(quint64, QueryStatus, bool blocked);
     void BlockStatusResult(quint64, bool blocked);
+    void TerminalSettingsResult(quint64, QVariantMap);
+    void TerminalSettingsSaved(quint64, bool ok);
 
 private:
     bool TryOpenRemote();

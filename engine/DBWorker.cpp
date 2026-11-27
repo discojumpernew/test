@@ -128,6 +128,21 @@ void db::DBWorker::EnsureRemoteSchema()
         qWarning() << "Failed to create washes table:" << query.lastError();
     }
 
+    // Админ-панель терминала: администраторы и настройки интерфейса/тарифов
+    if (!query.exec("CREATE TABLE IF NOT EXISTS admins ("
+                    "id INT AUTO_INCREMENT PRIMARY KEY, "
+                    "phone VARCHAR(20) NOT NULL UNIQUE, "
+                    "password CHAR(64) NOT NULL)")) {
+        qWarning() << "Failed to create admins table:" << query.lastError();
+    }
+
+    if (!query.exec("CREATE TABLE IF NOT EXISTS terminal_settings ("
+                    "name VARCHAR(64) PRIMARY KEY, "
+                    "value TEXT NOT NULL, "
+                    "updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)")) {
+        qWarning() << "Failed to create terminal_settings table:" << query.lastError();
+    }
+
     // миграция: привязка пополнений к посту. Проверяем наличие колонки,
     // чтобы не сыпать в лог "Duplicate column name 'id_code'".
     bool hasIdCodeColumn = false;
@@ -268,6 +283,17 @@ void db::DBWorker::TryLogin(quint64 requestId, QString phone, QString passwd)
 {
     if (TryOpenRemote()) {
         QSqlQuery query(remoteDB_);
+
+        // Сначала проверяем таблицу администраторов: вход по админ-номеру
+        // открывает админ-панель терминала, а не личный кабинет.
+        query.prepare("SELECT id FROM admins WHERE phone = :phone AND password = :pass");
+        query.bindValue(":phone", phone);
+        query.bindValue(":pass", passwd);
+        if (query.exec() && query.next()) {
+            emit TryLoginResult(requestId, QueryStatus::AdminSuccess, std::nullopt);
+            return;
+        }
+
         query.prepare("SELECT * FROM users WHERE phone = :phone AND password = :pass");
         query.bindValue(":phone", phone);
         query.bindValue(":pass", passwd);
@@ -478,4 +504,46 @@ void db::DBWorker::CheckBlockStatus(quint64 requestId, QString code)
     db::QueryStatus status = db::QueryStatus::DbError;
     QueryBlockedState(code, &blocked, &status);
     emit BlockStatusResult(requestId, status == db::QueryStatus::Success ? blocked : false);
+}
+
+// ============================================================
+// Админ-панель: настройки интерфейса и тарифов (terminal_settings)
+// ============================================================
+
+void db::DBWorker::LoadTerminalSettings(quint64 requestId)
+{
+    QVariantMap settings;
+    if (TryOpenRemote()) {
+        QSqlQuery query(remoteDB_);
+        if (query.exec("SELECT name, value FROM terminal_settings")) {
+            while (query.next())
+                settings.insert(query.value(0).toString(), query.value(1).toString());
+        } else {
+            qWarning() << "LoadTerminalSettings failed:" << query.lastError();
+        }
+    }
+    emit TerminalSettingsResult(requestId, settings);
+}
+
+void db::DBWorker::SaveTerminalSettings(quint64 requestId, QVariantMap settings)
+{
+    bool ok = false;
+    if (TryOpenRemote()) {
+        QSqlQuery query(remoteDB_);
+        query.prepare("INSERT INTO terminal_settings (name, value) VALUES (:name, :value) "
+                      "ON DUPLICATE KEY UPDATE value = :value2");
+        ok = true;
+        for (auto it = settings.constBegin(); it != settings.constEnd(); ++it) {
+            query.bindValue(":name", it.key());
+            const QString v = it.value().toString();
+            query.bindValue(":value", v);
+            query.bindValue(":value2", v);
+            if (!query.exec()) {
+                qWarning() << "SaveTerminalSettings" << it.key() << "failed:" << query.lastError();
+                ok = false;
+                break;
+            }
+        }
+    }
+    emit TerminalSettingsSaved(requestId, ok);
 }

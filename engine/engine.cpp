@@ -42,6 +42,13 @@ Engine::Engine(QString appdir, QObject* parent)
     QObject::connect(dbManager, &db::DBManager::GetUserHistoryResult, this, &Engine::OnGetUserHistoryResultDB, Qt::QueuedConnection);
     QObject::connect(dbManager, &db::DBManager::ValidateIdCodeResult, this, &Engine::OnValidateIdCodeResultDB, Qt::QueuedConnection);
     QObject::connect(dbManager, &db::DBManager::BlockStatusResult, this, &Engine::OnBlockStatusResultDB, Qt::QueuedConnection);
+    QObject::connect(dbManager, &db::DBManager::TerminalSettingsResult, this, &Engine::OnTerminalSettingsResultDB, Qt::QueuedConnection);
+    QObject::connect(dbManager, &db::DBManager::TerminalSettingsSaved, this, &Engine::OnTerminalSettingsSavedDB, Qt::QueuedConnection);
+
+    // Грузим настройки интерфейса/тарифов из БД сразу при старте:
+    // задача встанет в очередь после EnsureRemoteSchema и применится, как
+    // только появится связь (дефолты — из ui.json, пока БД не ответила).
+    adminReloadSettings();
 
     timer->setInterval(10);
     reconnectTimer->setInterval(30000);
@@ -693,6 +700,12 @@ void Engine::OnTryLoginResultDB(quint64 qId, db::QueryStatus status, std::option
             emit showLoginMessage(true, QString::fromUtf8("Пользователь уже активен на другом боксе."));
             break;
         }
+        case db::QueryStatus::AdminSuccess: {
+            // Вход по админ-номеру: открываем админ-панель, ЛК не трогаем.
+            emit loadingHidden();
+            emit showAdmin();
+            break;
+        }
         case db::QueryStatus::Success: {
             currentUser_ = uData;
             lastBeat = QTime::currentTime();
@@ -1133,3 +1146,187 @@ void Engine::setIsPauseFree(bool ispause_free)
     emit isPauseFreeChanged(m_ispause_free);
 }
 //=========================================
+
+// ============================================================
+// Админ-панель: дизайн, программы, платежи, тарифы
+// ============================================================
+
+QString Engine::designTheme() const { return m_designTheme; }
+bool Engine::progTurbo() const { return m_progTurbo; }
+bool Engine::progVacuum() const { return m_progVacuum; }
+bool Engine::progChemistry() const { return m_progChemistry; }
+bool Engine::progWax() const { return m_progWax; }
+bool Engine::progFoamPink() const { return m_progFoamPink; }
+bool Engine::progFoamYellow() const { return m_progFoamYellow; }
+bool Engine::progFoamWhite() const { return m_progFoamWhite; }
+bool Engine::payCash() const { return m_payCash; }
+bool Engine::paySbp() const { return m_paySbp; }
+bool Engine::payCard() const { return m_payCard; }
+
+void Engine::setDesignTheme(QString v)
+{
+    if (m_designTheme == v)
+        return;
+    m_designTheme = v;
+    emit designThemeChanged();
+}
+
+void Engine::setProgTurbo(bool v)
+{
+    if (m_progTurbo == v) return;
+    m_progTurbo = v;
+    emit progTurboChanged();
+}
+void Engine::setProgVacuum(bool v)
+{
+    if (m_progVacuum == v) return;
+    m_progVacuum = v;
+    emit progVacuumChanged();
+}
+void Engine::setProgChemistry(bool v)
+{
+    if (m_progChemistry == v) return;
+    m_progChemistry = v;
+    emit progChemistryChanged();
+}
+void Engine::setProgWax(bool v)
+{
+    if (m_progWax == v) return;
+    m_progWax = v;
+    emit progWaxChanged();
+}
+void Engine::setProgFoamPink(bool v)
+{
+    if (m_progFoamPink == v) return;
+    m_progFoamPink = v;
+    emit progFoamPinkChanged();
+}
+void Engine::setProgFoamYellow(bool v)
+{
+    if (m_progFoamYellow == v) return;
+    m_progFoamYellow = v;
+    emit progFoamYellowChanged();
+}
+void Engine::setProgFoamWhite(bool v)
+{
+    if (m_progFoamWhite == v) return;
+    m_progFoamWhite = v;
+    emit progFoamWhiteChanged();
+}
+void Engine::setPayCash(bool v)
+{
+    if (m_payCash == v) return;
+    m_payCash = v;
+    emit payCashChanged();
+}
+void Engine::setPaySbp(bool v)
+{
+    if (m_paySbp == v) return;
+    m_paySbp = v;
+    emit paySbpChanged();
+}
+void Engine::setPayCard(bool v)
+{
+    if (m_payCard == v) return;
+    m_payCard = v;
+    emit payCardChanged();
+}
+
+// Сеттеры тарифов (WRITE у Q_PROPERTY) — обновляют прайс на лету
+void Engine::setCleanerRate(QString v)
+{
+    if (m_cleanerRate == v) return;
+    m_cleanerRate = v;
+    emit cleanerRateChanged();
+}
+void Engine::setDryingRate(QString v)
+{
+    if (m_dryingRate == v) return;
+    m_dryingRate = v;
+    emit dryingRateChanged();
+}
+void Engine::setWaterRate(QString v)
+{
+    if (m_waterRate == v) return;
+    m_waterRate = v;
+    emit waterRateChanged();
+}
+void Engine::setChemistryRate(QString v)
+{
+    if (m_chemistryRate == v) return;
+    m_chemistryRate = v;
+    emit chemistryRateChanged();
+}
+void Engine::setFoamRate(QString v)
+{
+    if (m_foamRate == v) return;
+    m_foamRate = v;
+    emit foamRateChanged();
+}
+void Engine::setWaxRate(QString v)
+{
+    if (m_waxRate == v) return;
+    m_waxRate = v;
+    emit waxRateChanged();
+}
+void Engine::setPauseRate(QString v)
+{
+    if (m_pauseRate == v) return;
+    m_pauseRate = v;
+    emit pauseRateChanged();
+}
+
+void Engine::adminReloadSettings()
+{
+    auto requestId = requestTracker_.nextId();
+    activeRequests_.insert(requestId);
+    dbManager->LoadTerminalSettings(requestId);
+}
+
+void Engine::adminSaveSettings(const QVariantMap& settings)
+{
+    // Сразу применяем локально (оптимистично), затем сохраняем в БД.
+    OnTerminalSettingsResultDB(0, settings);
+    auto requestId = requestTracker_.nextId();
+    activeRequests_.insert(requestId);
+    dbManager->SaveTerminalSettings(requestId, settings);
+}
+
+void Engine::OnTerminalSettingsResultDB(quint64 qId, QVariantMap settings)
+{
+    activeRequests_.remove(qId);
+
+    if (settings.contains("design"))
+        setDesignTheme(settings.value("design").toString());
+    if (settings.contains("rate_cleaner"))
+        setCleanerRate(settings.value("rate_cleaner").toString());
+    if (settings.contains("rate_drying"))
+        setDryingRate(settings.value("rate_drying").toString());
+    if (settings.contains("rate_water"))
+        setWaterRate(settings.value("rate_water").toString());
+    if (settings.contains("rate_chemistry"))
+        setChemistryRate(settings.value("rate_chemistry").toString());
+    if (settings.contains("rate_foam"))
+        setFoamRate(settings.value("rate_foam").toString());
+    if (settings.contains("rate_wax"))
+        setWaxRate(settings.value("rate_wax").toString());
+    if (settings.contains("rate_pause"))
+        setPauseRate(settings.value("rate_pause").toString());
+
+    setProgTurbo(settings.value("prog_turbo", m_progTurbo ? "1" : "0").toString() == "1");
+    setProgVacuum(settings.value("prog_vacuum", m_progVacuum ? "1" : "0").toString() == "1");
+    setProgChemistry(settings.value("prog_chemistry", m_progChemistry ? "1" : "0").toString() == "1");
+    setProgWax(settings.value("prog_wax", m_progWax ? "1" : "0").toString() == "1");
+    setProgFoamPink(settings.value("prog_pink", m_progFoamPink ? "1" : "0").toString() == "1");
+    setProgFoamYellow(settings.value("prog_yellow", m_progFoamYellow ? "1" : "0").toString() == "1");
+    setProgFoamWhite(settings.value("prog_white", m_progFoamWhite ? "1" : "0").toString() == "1");
+    setPayCash(settings.value("pay_cash", m_payCash ? "1" : "0").toString() == "1");
+    setPaySbp(settings.value("pay_sbp", m_paySbp ? "1" : "0").toString() == "1");
+    setPayCard(settings.value("pay_card", m_payCard ? "1" : "0").toString() == "1");
+}
+
+void Engine::OnTerminalSettingsSavedDB(quint64 qId, bool ok)
+{
+    activeRequests_.remove(qId);
+    emit adminSettingsSaved(ok);
+}

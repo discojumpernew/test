@@ -27,6 +27,9 @@ public:
     void ValidateIdCode(quint64 requestId, QString code);
     void CheckBlockStatus(quint64 requestId, QString code);
 
+    void LoadTerminalSettings(quint64 requestId);
+    void SaveTerminalSettings(quint64 requestId, QVariantMap settings);
+
     void CancelTask(quint64 requestId);
     void CancelAllInSet(QSet<quint64> idSet);
 
@@ -37,6 +40,8 @@ signals:
     void GetUserHistoryResult(quint64, QueryStatus, QVector<historyElem>);
     void ValidateIdCodeResult(quint64, QueryStatus, bool blocked);
     void BlockStatusResult(quint64, bool blocked);
+    void TerminalSettingsResult(quint64, QVariantMap);
+    void TerminalSettingsSaved(quint64, bool ok);
 
 private:
     QThread workerThread_;

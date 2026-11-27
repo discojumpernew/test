@@ -7,55 +7,71 @@ QtObject {
     // false = светлая, true = тёмная
     property bool dark: true
 
+    // Дизайн интерфейса: "classic" (старый) | "duck" (новый, с уткой).
+    // Приходит из админ-панели (backend.designTheme), применяется на лету.
+    readonly property string design: (typeof backend !== "undefined" && backend.designTheme !== undefined) ? backend.designTheme : "classic"
+    readonly property bool isDuck: design === "duck"
+
     // === ФОН ПРИЛОЖЕНИЯ ===
     readonly property color appBackground: dark ? "#060a0d" // тёмная
-                                                : "#e8edf1" // светлая
+                                                : (isDuck ? "#eef7ff" : "#e8edf1")
 
     // === ФОН КНОПОК ===
-    readonly property color buttonTopBackground: dark ? "#222a30" : "#f8fafb"
-    readonly property color buttonBottomBackground: dark ? "#0c1115" : "#d9e1e7"
+    readonly property color buttonTopBackground: dark ? "#222a30"
+                                                      : (isDuck ? "#fffdf5" : "#f8fafb")
+    readonly property color buttonBottomBackground: dark ? "#0c1115"
+                                                         : (isDuck ? "#f6ecd2" : "#d9e1e7")
 
     readonly property color buttonTopColor: buttonTopBackground
     readonly property color buttonBottomColor: buttonBottomBackground
 
     // === РАМКА КНОПОК (градиент) ===
-    readonly property color buttonBorderTopColor: dark ? "#39434b" : "#f0f4f6"
-    readonly property color buttonBorderBottomColor: dark ? "#00e3f2" : "#64eef9"
+    readonly property color buttonBorderTopColor: dark ? "#39434b"
+                                                       : (isDuck ? "#ffe9a8" : "#f0f4f6")
+    readonly property color buttonBorderBottomColor: dark ? "#00e3f2"
+                                                          : (isDuck ? "#ffb340" : "#64eef9")
 
     // === ПОЛОСКИ ===
-    readonly property color lineColor: dark ? "#7bdafa" : "#74ccf6"
+    readonly property color lineColor: dark ? "#7bdafa"
+                                            : (isDuck ? "#ffb340" : "#74ccf6")
 
     // === ТЕКСТ "Self Service" ===
-    readonly property color titleColor: dark ? "#ffffff" : "#0a0a0a"
+    readonly property color titleColor: dark ? "#ffffff"
+                                             : (isDuck ? "#1d3557" : "#0a0a0a")
 
     // === ОБЫЧНЫЙ ТЕКСТ ===
-    readonly property color textColor: dark ? "#c3ccd4" : "#16181a"
+    readonly property color textColor: dark ? "#c3ccd4"
+                                            : (isDuck ? "#243b4a" : "#16181a")
 
     // === ТЕКСТ НА КНОПКАХ ===
-    readonly property color buttonTextColor: dark ? "#d3dce2" : "#16181a"
+    readonly property color buttonTextColor: dark ? "#d3dce2"
+                                                  : (isDuck ? "#243b4a" : "#16181a")
 
     // === АКЦЕНТ (баланс, время) ===
-    readonly property color accentColor: dark ? "#ffffff" : "#0a0a0a"
+    readonly property color accentColor: dark ? "#ffffff"
+                                              : (isDuck ? "#1d3557" : "#0a0a0a")
 
     // === ВТОРИЧНЫЙ ТЕКСТ ===
-    readonly property color secondaryTextColor: dark ? "#8b97a1" : "#555555"
+    readonly property color secondaryTextColor: dark ? "#8b97a1"
+                                                     : (isDuck ? "#6b7d8a" : "#555555")
 
-    // === АКТИВНАЯ (нажатая) КНОПКА — цвета из ПРОТИВОПОЛОЖНОЙ темы ===
-    // Тёмная тема: активная кнопка светлая
-    // Светлая тема: активная кнопка тёмная
-    readonly property color buttonActiveTop: dark ? "#f8fafb" // как buttonTopBackground светлой
-                                                  : "#222a30" // как buttonTopBackground тёмной
-    readonly property color buttonActiveBottom: dark ? "#d9e1e7" // как buttonBottomBackground светлой
-                                                     : "#0c1115" // как buttonBottomBackground тёмной
+    // === АКТИВНАЯ (нажатая) КНОПКА ===
+    // classic светлая — активная кнопка тёмная (как в тёмной теме);
+    // тёмная и duck — активная кнопка светлая (в duck — жёлтый акцент).
+    readonly property color buttonActiveTop: (!dark && !isDuck) ? "#222a30"
+                                              : (isDuck ? "#ffd66b" : "#f8fafb")
+    readonly property color buttonActiveBottom: (!dark && !isDuck) ? "#0c1115"
+                                                 : (isDuck ? "#ffb340" : "#d9e1e7")
 
     // Текст на активной кнопке — контрастный к её фону
-    readonly property color buttonActiveTextColor: dark ? "#0a0a0a" // на светлой кнопке — чёрный
-                                                        : "#d3dce2" // на тёмной кнопке — светлый
+    readonly property color buttonActiveTextColor: (!dark && !isDuck) ? "#d3dce2"
+                                                   : (isDuck ? "#3a2c00" : "#0a0a0a")
 
-    // Рамка активной кнопки — тоже из противоположной темы
-    readonly property color buttonActiveBorderTop: dark ? "#f0f4f6" // как в светлой теме
-                                                        : "#39434b" // как в тёмной теме
-    readonly property color buttonActiveBorderBottom: dark ? "#64eef9" : "#00e3f2"
+    // Рамка активной кнопки
+    readonly property color buttonActiveBorderTop: (!dark && !isDuck) ? "#39434b"
+                                                   : (isDuck ? "#ffe9a8" : "#f0f4f6")
+    readonly property color buttonActiveBorderBottom: (!dark && !isDuck) ? "#00e3f2"
+                                                      : (isDuck ? "#e8930f" : "#64eef9")
 
     // === РАЗДЕЛИТЕЛИ ===
     readonly property color separatorColor: lineColor
