@@ -697,7 +697,10 @@ void Engine::OnTryLoginResultDB(quint64 qId, db::QueryStatus status, std::option
             currentUser_ = uData;
             lastBeat = QTime::currentTime();
 
-            newBalance = currentUser_->balance + balance();
+            // FIX: баланс из БД — источник истины. Ранее складывался с кэшем
+            // терминала (currentUser_->balance + balance()), из-за чего при
+            // каждом входе в ЛК баланс удваивался (3250 → 6500).
+            newBalance = currentUser_->balance;
             reset_balance = true;
             add_balance = true;
 

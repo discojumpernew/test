@@ -324,6 +324,7 @@ Rectangle {
         width: time_div.width - 40
         height: parent.height / 25
         color: "transparent"
+        visible: false // полоска «ЧИСТАЯ ВОДА» убрана по просьбе — место занимает невидимо, вёрстка не едет
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: time_div.bottom
 
@@ -437,10 +438,12 @@ Rectangle {
 
                 Text {
                     horizontalAlignment: Text.AlignHCenter
-                    text: "СЛАБОЕ\nДАВЛЕНИЕ"
+                    text: "ВОДА\nСЛАБОЕ\nДАВЛЕНИЕ"
                     color: parent.checked ? themeItem.buttonActiveTextColor : themeItem.buttonTextColor
                     font.family: myFont.name
-                    font.pointSize: themeItem.fontSize - 4
+                    font.pointSize: themeItem.fontSize - 6
+                    minimumPointSize: 14
+                    fontSizeMode: Text.Fit
                     font.weight: themeItem.fontWeight
                     anchors.left: parent.left
                     anchors.right: parent.right
@@ -466,10 +469,12 @@ Rectangle {
 
                 Text {
                     horizontalAlignment: Text.AlignHCenter
-                    text: "СРЕДНЕЕ\nДАВЛЕНИЕ"
+                    text: "ВОДА\nСРЕДНЕЕ\nДАВЛЕНИЕ"
                     color: parent.checked ? themeItem.buttonActiveTextColor : themeItem.buttonTextColor
                     font.family: myFont.name
-                    font.pointSize: themeItem.fontSize - 4
+                    font.pointSize: themeItem.fontSize - 6
+                    minimumPointSize: 14
+                    fontSizeMode: Text.Fit
                     font.weight: themeItem.fontWeight
                     anchors.left: parent.left
                     anchors.right: parent.right
@@ -495,10 +500,12 @@ Rectangle {
 
                 Text {
                     horizontalAlignment: Text.AlignHCenter
-                    text: "ВЫСОКОЕ\nДАВЛЕНИЕ"
+                    text: "ВОДА\nВЫСОКОЕ\nДАВЛЕНИЕ"
                     color: parent.checked ? themeItem.buttonActiveTextColor : themeItem.buttonTextColor
                     font.family: myFont.name
-                    font.pointSize: themeItem.fontSize - 4
+                    font.pointSize: themeItem.fontSize - 6
+                    minimumPointSize: 14
+                    fontSizeMode: Text.Fit
                     font.weight: themeItem.fontWeight
                     anchors.left: parent.left
                     anchors.right: parent.right
